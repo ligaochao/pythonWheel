@@ -1,0 +1,43 @@
+# 删除一串字符指定范围内的任意位置的字符，指定位置，且删除元素具有唯一性
+def strinSideDelete(log,bodyJson,deleteStr,i=0,arrylog = []):
+    try:
+        lenBody = len(bodyJson)
+        lenStr = len(deleteStr[i])
+        responseHead = log.find(bodyJson)
+        responseTail = responseHead+lenBody
+        abc = log[responseHead:responseTail]
+        if abc.find(deleteStr[i])>-1:
+            responseStart = abc.find(deleteStr[i])
+            cutStart = responseHead+responseStart
+            log = log[0:cutStart]+log[cutStart+lenStr:]
+            bodyJson =bodyJson[0:responseStart]+bodyJson[responseStart+lenStr:]
+            i = i+1
+            if i==len(deleteStr):
+                arrylog.append(log)
+                arrylog.append(bodyJson)
+            else:
+                strinSideDelete(log,bodyJson,deleteStr,i,arrylog)
+    except :
+        print('元素不存在')
+        return null
+    finally:
+        if len(arrylog)==0:
+            arrylog.append(log)
+            arrylog.append(bodyJson)
+
+        return arrylog
+    
+   
+# # 示例
+# log = '我是个好人而不是个坏人'
+# bodyJson = '是个好人而不是'
+# deleteStr = ['个','人']
+# bodyJson1 = '是个好人而不是'
+# deleteStr1 = ['而','人']
+# # 这里必须把arrylog = []带上，不然多次使用的时候arrylog会尾部追加
+# inputStr = strinSideDelete(log,bodyJson,deleteStr,arrylog = [])
+# inputStr1 = strinSideDelete(log,bodyJson1,deleteStr1,arrylog = [])
+# print(inputStr)
+# print(inputStr1)
+
+
