@@ -1,0 +1,33 @@
+import smtplib
+import email.mime.multipart
+import email.mime.text
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication 
+
+
+
+def send_email(smtpHost, sendAddr, password, recipientAddrs, fileurl,subject='', content=''):
+    msg = email.mime.multipart.MIMEMultipart()
+    msg['from'] = sendAddr
+    msg['to'] = recipientAddrs
+    msg['subject'] = subject
+    print(content)
+    content = content
+    txt = email.mime.text.MIMEText(content, 'plain', 'utf-8')
+    msg.attach(txt)
+    # 添加附件，传送D:/软件/yasuo.rar文件
+    part = MIMEApplication(open(fileurl,'rb').read())
+    part.add_header('Content-Disposition', 'attachment', filename="log.txt")
+    msg.attach(part)
+    smtp = smtplib.SMTP()
+    smtp.connect(smtpHost, '25')
+    smtp.login(sendAddr, password)
+    smtp.sendmail(sendAddr, recipientAddrs, str(msg))
+    print("发送成功！")
+    smtp.quit() 
+   
+# fileurl = 'a.txt'           #附件
+# subject = '不错'
+# content = '这是用来测试的'
+    
