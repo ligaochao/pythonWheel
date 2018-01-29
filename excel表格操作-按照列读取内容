@@ -1,0 +1,24 @@
+from xml.dom import minidom
+import xlrd
+import openpyxl
+import xlrd as ExcelRead
+import itchat
+
+def getCaseList(fileName):
+    readExcel = xlrd.open_workbook(fileName)
+    try:
+        Exceldata = []
+        table = readExcel.sheet_by_index(0)                             #获取Excel的第一个sheet
+        trows = table.nrows                                             #获取Excel的行数
+        col_num = table.ncols                                           #获取Excel的列数 
+        for x in range(0,trows):
+            keyExcel = table.cell(x,0).value
+            Exceldata.append(keyExcel)
+    except Exception as e:
+        print(e)
+    finally:
+        pass
+        return Exceldata
+
+
+Exceldata = getCaseList('action.xlsx')
