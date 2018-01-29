@@ -1,0 +1,38 @@
+from xml.dom import minidom
+# import xlrd
+import openpyxl
+import xlrd as ExcelRead
+from xlutils.copy import copy 
+import xlwt
+import os
+
+
+
+# 写入excel表
+def write_append(file_name,xlsxRows,xlsxCols,xlsxColor,values):
+    print(file_name)
+    r_xls = ExcelRead.open_workbook(file_name,formatting_info=1) #这里不支持true，改成1就可以带样式粘贴了
+    r_sheet = r_xls.sheet_by_index(0)
+    rows = r_sheet.nrows
+    cols = r_sheet.ncols
+    w_xls = copy(r_xls)
+    sheet_write = w_xls.get_sheet(0)
+    sheet_write.write(xlsxRows,xlsxCols,values,xlwt.easyxf('font: height 240, name Arial, colour_index '+xlsxColor+', bold off, italic on; align: wrap on, vert centre, horiz left;'))
+    os.remove(file_name)
+    w_xls.save(file_name)
+
+
+
+
+# file_name = u'aaa.xlsx'     #文件目录
+# xlsxRows = 0                #行
+# xlsxCols = 6                #列
+# values = 'True'             #写入内容
+# xlsxColor = 'red'           #颜色
+# excelWrite.write_append(file_name,xlsxRows,xlsxCols,xlsxColor,values)
+
+
+
+
+
+
