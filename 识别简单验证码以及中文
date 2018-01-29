@@ -1,0 +1,19 @@
+from PIL import Image 
+# https://www.waitalone.cn/python-php-ocr.html
+# https://sourceforge.net/projects/tesseract-ocr/files/latest/download
+# http://blog.csdn.net/Bone_ACE/article/details/50436587
+# http://blog.csdn.net/dcba2014/article/details/78969658
+import pytesseract
+
+def verificationCode(imageurl):
+    image = Image.open(imageurl)
+    tessdata_dir_config = '--tessdata-dir "C:\\Program Files (x86)\\Tesseract-OCR\\tessdata"'
+    vcode = pytesseract.image_to_string(image,config=tessdata_dir_config)
+    # 下面这个是识别简体中文的包
+    # vcode = pytesseract.image_to_string(image,lang='chi_sim',config = tessdata_dir_config)
+    return vcode
+
+
+imageurl = './image/4561.png'
+vcode = verificationCode(imageurl)
+print(vcode)
