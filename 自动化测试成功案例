@@ -1,0 +1,46 @@
+# This sample code uses the Appium python client
+# pip install Appium-Python-Client
+# Then you can paste this into a file and simply run with Python
+
+from appium import webdriver
+from appium.webdriver.common.touch_action import TouchAction
+import time
+import os
+
+caps = {}
+caps["platformName"] = "Android"
+caps["platformVersion"] = "7.0"
+caps["deviceName"] = "PRA-ALOOX"
+caps["appPackage"] = "com.bw30.zsch"
+caps["appActivity"] = "com.bw.zsch.NavigationActivity"
+caps["noReset"] = True
+caps["unicodeKeyboard"] = "True"
+caps["resetKeyboard"] = "True"
+
+driver = webdriver.Remote("http://localhost:4723/wd/hub", caps)
+
+time.sleep(5)
+# el1 = driver.find_element_by_xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.RelativeLayout/android.widget.TabHost/android.widget.LinearLayout/android.widget.TabWidget/android.widget.LinearLayout[3]/android.widget.ImageView")
+el1 = driver.find_element_by_id("com.bw30.zsch:id/imgB_back")
+el1.click()
+
+el1 = driver.find_element_by_xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.RelativeLayout/android.widget.TabHost/android.widget.LinearLayout/android.widget.TabWidget/android.widget.LinearLayout[5]/android.widget.ImageView")
+el1.click()
+time.sleep(5)
+driver.tap([(0,318),(1080,601)], 100) 
+time.sleep(5)
+el1 = driver.find_element_by_id("com.bw30.zsch:id/et_login_user_name")
+el1.send_keys("18351965563")
+el2 = driver.find_element_by_id("com.bw30.zsch:id/et_login_password")
+el2.click()
+el2.send_keys("lgc057171")
+el3 = driver.find_element_by_id("com.bw30.zsch:id/btn_login")
+el3.click()
+time.sleep(30)
+driver.get_screenshot_as_file('.\\image\\'+'45868.png')
+
+
+
+
+
+# driver.quit()
