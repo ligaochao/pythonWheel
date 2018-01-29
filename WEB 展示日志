@@ -1,0 +1,518 @@
+pythonWebData.py
+
+import web
+import sqlite3
+import sys
+import logRequired
+# http://localhost:8080/index?condition=1&keyStr=20
+        
+urls = (
+    '/index', 'index',
+    '/blog/\d+', 'blog',
+    '/(.*)', 'hello'
+)
+render = web.template.render('templates/')
+app = web.application(urls, globals())
+
+class hello:        
+    def GET(self, name):
+        raise web.seeother('/index')
+        # return open(r'templates/hello.html').read()
+
+class index:
+  
+    def GET(self):
+        i = web.input()
+        try:
+            condition = i.condition
+            keyStr = i.keyStr
+            host = i.host
+            username = i.username
+            password = i.password
+            command = i.command
+            flag = i.flag
+            way = i.way
+            fileName = i.fileName
+            stressKey = i.stressKey
+            name = logRequired.logHandle(condition,keyStr,host,username,password,command,flag,way,fileName,stressKey)
+            # content = ['搜索','请输入查询时间范围（以当前时间基地，单位秒钟）','请输入查询日志条数（纯数字）','请输入查询关键字（接口名称等）','必填参数不能为空','选中内容：','输入格式有误，请检查','指令','搜索','输入需要强调的关键字，以分号分隔',host,]
+            content = ['搜索','请输入查询时间范围（以当前时间基地，单位秒钟）','请输入查询日志条数（纯数字）','请输入查询关键字（接口名称等）','必填参数不能为空','选中内容：','输入格式有误，请检查','指令','搜索','输入需要强调的关键字，以分号分隔',host,username,password,way,fileName,command]
+            return render.jiaohu(name,content) 
+        except:
+            # content = ['搜索','请输入查询时间范围（以当前时间基地，单位秒钟）','请输入查询日志条数（纯数字）','请输入查询关键字（接口名称等）','必填参数不能为空','选中内容：','输入格式有误，请检查','指令','搜索','输入需要强调的关键字，以分号分隔','172.19.100.182',"root"]
+            content = ['搜索','请输入查询时间范围（以当前时间基地，单位秒钟）','请输入查询日志条数（纯数字）','请输入查询关键字（接口名称等）','必填参数不能为空','选中内容：','输入格式有误，请检查','指令','搜索','输入需要强调的关键字，以分号分隔','172.19.100.182','root','bewinner','/opt/','aceshi.txt','cd  /opt/;cat aceshi.txt | tail -n 10']
+            name = 'none'
+            return render.jiaohu(name,content)
+        
+
+class blog:
+    def POST(self):
+        data = web.input()
+        raise web.seeother('/index')
+        # return data
+
+if __name__ == "__main__":
+    app.run()
+
+
+模板一：
+
+hello.html
+
+<html>
+	<head>
+		<title>hello 123</title>
+	</head>
+	<body>
+		<h1>POST</h1>
+		<form action="/blog/123" method="POST">
+			<input type="text" name="id" value=""/>
+			<input type="password" name="password" value=""/>
+			<input type="submit" value="submit">
+		</form>
+		
+	</body>
+<script src="http://code.jquery.com/jquery-latest.js"></script>
+<script type="text/javascript">
+
+	
+</script>
+</html>
+
+模板二：
+
+$def with (name,content)
+<!DOCTYPE html>
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=gbk" />
+<head>
+  <title></title>
+</head>
+<body>
+<div class='center'>
+  <form action="/index" method="get">
+      <input type="text" name ="host" id="host" value="$content[10]"></input>
+      <input type="text" name ="username" id="username" value="$content[11]"/>
+      <input type="text" name ="password" id="password" value="$content[12]"/>
+      <input type="text" name ="way" id="way" value="$content[13]"/>
+      <input type="text" name ="fileName" id="fileName" value="$content[14]"/>
+      <input type="text" name ="command" id="command" value="$content[15]"/>
+      </br>
+      </br>
+      <input type="text" name="stressKey" id='stressKey' placeholder=$content[9]>
+      </br>
+      </br>
+      <input type="radio" name="flag" id='flag'  value='1'><label>$content[8]</label>
+      <input type="radio" name="flag" id='flagNo' checked = 'true' vslue ='0'><label>$content[7]</label>
+      
+      <pre>
+      </pre>
+      <select onclick="change(this)" name = "condition"> 
+        <option value="1">length</option>
+        <option value="2">time</option>  
+        <option value="3">key</option> 
+      </select> 
+      <input type="text" name ="keyStr" id="keyStr" value="" onfocus = 'this.value=""' />
+      <!-- <input type="submit" onclick="checkout(this.form)" value=$content[0]> -->
+      <button onclick="checkout(this.form)">$content[0]</button>
+  </form>
+  <div class="content"> $name </div>
+  <label for="website">$content[5]</label>
+  <input type="text" id="website" value="1234dswd3454"  /> 
+  <input type="hidden" id="time" value=$content[1]  />
+  <input type="hidden" id="key" value=$content[2]  />
+  <input type="hidden" id="length" value=$content[3]  /> 
+  <input type="hidden" id="noVoid" value=$content[4]  />
+  <input type="hidden" id="formError" value=$content[6]  />
+
+</div>
+</body>
+<script type="text/javascript">
+    window.onload = function(){
+      if (document.getElementById('flag').checked){
+
+      }
+      tags = document.getElementsByClassName('content')
+      for(var i = 0; i < tags.length; i++){
+          tags[i].innerHTML = tags[i].innerText
+      }
+    }
+
+    document.onmousedown = function(){
+        var obj=document.elementFromPoint(event.clientX,event.clientY);
+        try{
+          document.getElementById("website").value = obj.innerText 
+        }catch(e){
+          console.log(e)
+        }
+        
+    }
+    function checkout(obj) {
+      if(document.getElementById('flag').checked){
+        if(obj.keyStr.value == ''){
+          alert(document.getElementById("noVoid").value)
+          return false
+        }else if (obj.condition.value == 1||obj.condition.value == 3) {
+          if(isNaN(obj.keyStr.value)){
+            alert(document.getElementById("formError").value)
+            return false
+          }
+        }else{
+          console.log(1111)
+           obj.submit()
+        }
+      } 
+    }
+    function change(obj){
+      if(obj.value=='time'){
+        document.getElementById("keyStr").value = document.getElementById("time").value
+      }else if(obj.value=='key'){
+        document.getElementById("keyStr").value = document.getElementById("key").value
+      }else if(obj.value=='length'){
+        document.getElementById("keyStr").value = document.getElementById("length").value
+      }
+   
+    }
+    document.onmouseup=function(e){
+
+        content=window.getSelection().toString();
+     
+       if(content!=''){
+       
+          }}
+
+  
+  // click events
+  document.body.addEventListener('click', copy, true);
+
+    // event handler
+    function copy(e) {
+    console.log(22)
+
+    // find target element
+    var 
+      t = e.target,
+      c = t.dataset.copytarget,
+      inp = (c ? document.querySelector(c) : null);
+      
+    // is element selectable?
+    if (inp && inp.select) {
+      
+      // select text
+      inp.select();
+
+      try {
+        // copy text
+        document.execCommand('copy');
+        inp.blur();
+        
+        // copied animation
+        t.classList.add('copied');
+        setTimeout(function() { t.classList.remove('copied'); }, 1500);
+      }
+      catch (err) {
+        alert('please press Ctrl/Cmd+C to copy');
+      }
+      
+    }
+    
+    }
+
+</script>
+</html>
+<style type="text/css">
+div.center {
+    margin: 0 auto;
+    text-align:center;
+}
+
+table.gridtable {
+  margin: 0 auto;
+    font-family: verdana,arial,sans-serif;
+    font-size:11px;
+    color:#333333;
+    border-width: 1px;
+    border-color: #666666;
+    border-collapse: collapse;
+}
+table.gridtable th {
+    border-width: 1px;
+    padding: 8px;
+    border-style: solid;
+    border-color: #666666;
+    background-color: #dedede;
+}
+table.gridtable td {
+    border-width: 1px;
+    padding: 8px;
+    border-style: solid;
+    border-color: #666666;
+    background-color: #ffffff;
+}
+body{
+  text-align:center;
+  width:2048px;
+} 
+.content{
+  width: 100%;
+  word-wrap:break-word; 
+  word-break:break-all; 
+  text-align: center; 
+}
+
+.content a{
+  word-wrap:break-word; 
+  word-break:break-all;
+  text-align: center; 
+}
+
+.btn-select { 
+    position: relative; 
+    display: inline-block; 
+    width: 150px; 
+    height: 18px; 
+    background-color: #f80; 
+    font: 14px/20px "Microsoft YaHei"; 
+    color: #fff; 
+} 
+.btn-select .cur-select { 
+    position: absolute; 
+    display: block; 
+    width: 150px; 
+    height: 25px; 
+    line-height: 25px; 
+    background: #f80 url(ico-arrow.png) no-repeat 125px center; 
+    text-indent: 10px; 
+} 
+.btn-select:hover .cur-select { 
+background-color: #f90; 
+} 
+.btn-select select { 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    width: 150px; 
+    height: 25px; 
+    opacity: 0; 
+    filter: alpha(opacity: 0;); 
+    font: 14px/20px "Microsoft YaHei"; 
+    color: #f80; 
+} 
+.btn-select select option { 
+    text-indent: 10px; 
+} 
+.btn-select select option:hover { 
+    background-color: #f80; 
+    color: #fff; 
+} 
+
+input[type="text"]{
+  text-align: center;
+  border-radius:4px;
+  height: 1.5em;
+  width: 300px;
+  border:1px solid #c8cccf;
+  color:#6a6f77;
+  -web-kit-appearance:none;
+  -moz-appearance: none;
+}
+
+form {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+select {
+
+  appearance:none;
+  -moz-appearance:none;
+  -webkit-appearance:none;
+  /*background:url(../images/select_arrow.png)  no-repeat right center;*/
+  /*padding-right:14px;*/
+  width:72px;
+  height:23px;
+  border:1px solid #ccc;
+  color:black;
+  background-color: #FFF;
+  font-weight: bold;
+  font-size: 1.1em
+}
+
+</style>
+
+
+日志源：logRequired.py
+
+
+import paramiko
+import os
+import re  
+import time   
+import smtplib
+import sqlite3
+import codecs
+import chardet
+import logObtain  #windows条件下日志拉去
+import strDelete
+import strDeleteUpdate
+# 正则匹配
+# https://www.zybang.com/question/bc69bc8ff34a9106c1ffc30521c7b3af.html
+
+# host = '172.19.100.182'
+# port = 22
+# username = 'root'
+# password = 'bewinner'
+# command = 'cd /opt;cat aceshi.txt | tail -n 10'
+
+# log = logObtain.ssh2_exec_command(host,port,username,password,command)
+
+
+
+
+
+
+
+
+def logHandel(log,start,end,colorClass):
+    # requestJson = re.findall(r''+start+'.*?'+end+'',log)
+    print('这里是日志',log)
+    liftPart = start
+    print('这里是入参开始',start)
+    print('这里是入参结束',end)
+
+    liftList = [m.start() for m in re.finditer(liftPart,log)]
+    rightPart = end
+    rightList = [m.start() for m in re.finditer(rightPart,log)]
+
+    requestJson= []
+    for x in liftList:
+        for y in rightList:
+            if x < y:
+                if log[y+1:x].find(start) == -1 and log[y+1:x].find(end) == -1:
+                    obj = log[y+1:x]
+                    requestJson.append(obj)
+    for index in range(len(requestJson)):
+        obj  = requestJson[index]
+        obj = obj.rstrip(end)
+        obj = obj.lstrip(start)
+        bodyJson = obj
+        deleteStr = ['<div><a href= "https://www.json.cn/" style = "color:red" data-copytarget="#website" target="_blank">','</a></div>']
+        # arryLog= strDeleteUpdate.strinSideDelete1(log,bodyJson,deleteStr,arrylog = [])
+        # log = arryLog[0].replace(arryLog[1],'<div><a href= "https://www.json.cn/" style = "color:red" data-copytarget="#website" target="_blank">'+arryLog[1]+'</a></div>')
+        requestJson[index] = obj
+         
+    return log
+
+def logHandle(condition,keyStr,host,username,password,command,flag,way,fileName,stressKey):
+    port = 22
+    # host = '172.19.100.182'
+    # username = 'root'
+    # password = 'bewinner'
+    # command = 'cd /opt;cat aceshi.txt | tail -n 12'
+    try:
+        log = logObtain.ssh2_exec_command(host,port,username,password,command)
+    except:
+        return '连接异常'
+    log = log.replace("'",'"')
+    log = log.replace('','')
+    log = log.replace('(','wdefradedw')
+    log = log.replace(')','dwdefwefw2eade')
+    log = log.replace('*','xcrffrgwfeqefqge')
+    
+    log = '}'+log+'{'
+    liftPart = '{'
+
+    liftList = [m.start() for m in re.finditer(liftPart,log)]
+    rightPart = '}'
+    rightList = [m.start() for m in re.finditer(rightPart,log)]
+
+    logKeyWord= []
+    for x in liftList:
+        for y in rightList:
+            if x > y:
+                if log[y+1:x].find('"') == -1 and log[y+1:x].find('}') == -1 and log[y+1:x].find('{') == -1:
+                    obj = log[y+1:x]
+                    if obj !='' and obj !=',':
+                        logKeyWord.append(obj)
+
+    # for x in liftList:
+    #     for y in rightList:
+    #         if y < x:
+    #             if  log[y+1:x].find('}') == -1 and log[y+1:x].find('{') == -1 and log[y+1:x].find('"') == -1:
+    #                 obj = log[y+1:x]
+    #                 logKeyWord.append(obj)
+    #                 # logStart = log[0:x]
+    #                 # logEnd = log[y:]
+    #                 # obj = '<div><a href= "https://www.json.cn/" style = "color:red" data-copytarget="#website" target="_blank">'+obj+'</a></div>'
+    #                 # log = logStart+obj+logEnd
+
+    arryChuli = []
+    for obj in logKeyWord:
+        index = logKeyWord.index(obj)
+        lengthObj = len(obj)
+        if index <len(logKeyWord)-1:
+            nextObj = logKeyWord[index+1]
+            startPosition = log.find(obj)
+            endPosition = log.find(nextObj)
+            objD = log[startPosition+lengthObj:endPosition]
+            arryChuli.append(objD)
+
+
+    
+    for obj in arryChuli:
+            deleteStr = ['<div><a href= "https://www.json.cn/" style = "color:red" data-copytarget="#website" target="_blank">','</a></div>']
+            arryLog= strDeleteUpdate.strinSideDelete1(log,obj,deleteStr,arrylog = [])
+            print(arryLog)
+            log = arryLog[0].replace(arryLog[1],'<div><a href= "https://www.json.cn/" style = "color:red" data-copytarget="#website" target="_blank">'+arryLog[1]+'</a></div>')
+                    
+
+    # for x in range(len(logKeyWord)):
+    #     if x == len(logKeyWord)-1:
+    #         break
+    #     log = logHandel(log,logKeyWord[x],logKeyWord[x+1],'red')
+    # requestJson= []
+    # for x in logKeyWord:
+    #     lenStart = len(x)
+    #     index = logKeyWord.index(x)
+    #     if index < len(logKeyWord)-1:
+    #         # lenEnd = len(logKeyWord[index+1])
+    #         startPosition = log.find(x)
+    #         endPosition = log.find(logKeyWord[index+1])
+    #         strSignal = log[startPosition+lenStart:endPosition]
+    #         str1 = strSignal[1:len(strSignal)-1]
+    #         if str1.find('{')==-1 and str1.find('}')==-1:
+    #             logStart = log[0:startPosition]
+    #             logEnd = log[endPosition:]
+    #             requestJson.append(strSignal)
+    #             obj = '<div><a href= "https://www.json.cn/" style = "color:red" data-copytarget="#website" target="_blank">'+strSignal+'</a></div>'
+    #             log = logStart+obj+logEnd
+
+
+    # print('这里是过滤的结果',logKeyWord)
+    
+
+    log = log.replace('wdefradedw','(')
+    log = log.replace(')','dwdefwefw2eade')
+    log = log.replace('xcrffrgwfeqefqge','*')
+   
+    # if stressKey != "":
+    #     stressKey = stressKey.split(";")
+    #     for x in stressKey:
+    #         log = log.replace(x,'<em style = "color:black;font-weight:bold">'+x+'</em>')
+
+    # if flag == '1':
+    #     log = condition+'*'+keyStr
+    # else:
+    #     log = host+'*'+username+'*'+password+'*'+command
+    # log = way+'*'+fileName
+    # log = host+'*'+str(port)+'*'+username+'*'+password+'*'+command
+    # log = host+'*'+port
+    return log
+
+
+print(logHandle('','','','','','','','','',''))
+
+
+
+
+
