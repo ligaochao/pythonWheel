@@ -1,0 +1,35 @@
+import paramiko
+import os
+import re  
+import time   
+import smtplib
+
+
+def ssh2_exec_command(host,port,username,password,command):
+    log = ''
+    sf = paramiko.Transport((host,port))
+    sf.connect(username = username,password = password)
+    print ("ssh2 execute command: %s" %(command))
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(host, username=username, password=password)
+    stdin, stdout, stderr = ssh.exec_command(command)
+    stdin.close()
+    for line in stdout.read().splitlines():
+        log = log + str(line.decode('utf-8'))
+    for line in stderr.read().splitlines():
+        print ("command error ---%s" %(line))
+
+    sf.close()
+    return log
+
+
+# host = '172.19.100.182'
+# port = 22
+# username = 'root'
+# password = 'bewinner'
+# command = 'cd /opt/ceshi;cat aceshi.txt | tail -n 10'
+
+# print(ssh2_exec_command(host,port,username,password,command))
+
+
