@@ -1,0 +1,23 @@
+from PIL import Image
+from PIL import ImageChops 
+
+
+def compare_images(path_one, path_two, diff_save_location):
+    image_one = Image.open(path_one)
+    image_two = Image.open(path_two)
+ 
+    diff = ImageChops.difference(image_one, image_two)
+
+    if diff.getbbox() is None:
+        os.remove(path_two)
+ 
+    if diff.getbbox() is None:
+        # 图片间没有任何不同则直接退出
+        return
+    else:
+        diff.save(diff_save_location) 
+
+
+
+
+# imageCompare.compare_images('./image/1.png','./image/11.png','./image/12.png' )
