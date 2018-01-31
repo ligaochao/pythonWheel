@@ -1,0 +1,39 @@
+import paramiko
+import time
+# 创建SSH对象
+ssh = paramiko.SSHClient()
+# 允许连接不在know_hosts文件中的主机
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())#第一次登录的认证信息
+# 连接服务器
+ssh.connect(hostname='172.16.10.211', port=22, username='root', password='bewinner')
+timeNode = 0
+while True:
+	# 执行命令
+	stdin, stdout, stderr = ssh.exec_command('cd /opt/tomcat7-1/logs;stat -c %Y catalina.out')
+	# 获取命令结果
+	res,err = stdout.read(),stderr.read()
+	result = res if res else err
+	print(result.decode())
+    
+	#转换成localtime
+	time_local = time.localtime(int(result.decode()))
+	#转换成新的时间格式(2016-05-05 20:28:54)
+	dt = time.strftime("%Y-%m-%d %H:%M:%S",time_local)
+	if timeNode == 0:
+		timeNode = dt
+	else:
+		if timeNode != dt:
+			timeNode = dt
+			print(dt)
+			logTime = "cd /opt/tomcat7-1/logs;sed -n '/"+str(dt)+"/,/2030-01-04 11:20:55/p'  catalina.out"
+
+			# stdin1, stdout1, stderr1 = ssh.exec_command('cd /opt/tomcat7-1/logs;cat catalina.out | tail -n 5')
+			stdin1, stdout1, stderr1 = ssh.exec_command(logTime)
+			# stdin1, stdout1, stderr1 = ssh.exec_command('cd /opt/tomcat7-1/logs;tail -f catalina.out')
+			# 获取命令结果
+			res1,err1 = stdout1.read(),stderr1.read()
+			result1 = res1 if res1 else err1
+			print(result1.decode())
+	time.sleep(10)
+# 关闭连接
+ssh.close()
