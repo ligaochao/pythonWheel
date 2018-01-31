@@ -5,3 +5,14 @@ def lastFind(string,strFind):
 		if position == -1:
 			return last_position
 		last_position = position
+abc ='''2018-01-31 09:49:41
+2018-01-31 09:49:41 DEBUG - com.ibatis.common.logging.jakarta.JakartaCommonsLoggingImpl.debug(JakartaCommonsLoggingImpl.java:27){conn-120450} Connection2018-01-31 09:49:41 DEBUG - com.ibatis.common.logging.jakarta.JakartaCommonsLoggingImpl.debug(JakartaCommonsLoggingImpl.java:27){conn-120450} Preparing Statement: select * from BW30PAYMENT where (issue is null or issue <> 1) and status='00' and payVersion='2' and updateTime between sysdate - 0.00001157*10*60 and sysdate +  0.00001157*10*60
+2018-01-31 09:49:41 DEBUG - com.ibatis.common.logging.jakarta.JakartaCommonsLoggingImpl.debug(JakartaCommonsLoggingImpl.java:27)1pstm-120451} Executing Statement: select * from BW30PAYMENT where (issue is null or issue <> 1) and status='00' and payVersion='2' and updateTime between sysdate - 0.00001157*10*60 and sysdate +  0.00001157*10*60
+2018-01-31 09:49:41 DEBUG - com.ibatis.common.logging.jakarta.JakartaCommonsLoggingImpl.debug(JakartaCommonsLoggingImpl.java:27)1pstm-120451} Parameters: []
+2018-01-31 09:49:41 DEBUG - com.ibatis.common.logging.jakarta.JakartaCommonsLoggingImpl.debug(JakartaCommonsLoggingImpl.java:27){pstm-120451} Types: []
+2018-01-31 09:49:41 DEBUG - com.ibatis.common.logging.jakarta.JakartaCommonsLoggingImpl.debug(JakartaCommonsLoggingImpl.java:27){rset-120452} ResultSet
+2018-01-31 09:49:41 DEBUG - com.scal.pay.service.impl.PayOrderServiceImpl.run(PayOrderServiceImpl.java:312)payMentList:[]'''
+
+
+print(abc.find('{pstm-120451}'))
+print(lastFind(abc,'{pstm-120451}'))
