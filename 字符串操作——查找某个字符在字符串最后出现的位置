@@ -1,0 +1,7 @@
+def lastFind(string,strFind):
+	last_position = -1
+	while True:
+		position =string.find(strFind,last_position+1)
+		if position == -1:
+			return last_position
+		last_position = position
