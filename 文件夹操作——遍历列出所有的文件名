@@ -1,0 +1,15 @@
+import os  
+import sys
+  
+def file_name(file_dir):   
+    for root, dirs, files in os.walk(file_dir):  
+        print(root) #当前目录路径  
+        print(dirs) #当前路径下所有子目录  
+        print(files) #当前路径下所有非目录子文件
+
+# print(file_name('C:\\Users\\ligc\\Desktop\\python\\打包回家\\个人\\小说助手\\txt'))
+print(sys.path[0])
+
+#获取文件绝对路径，然后遍历绝对路径下的文件，来模仿相对路径
+abc = sys.path[0]
+print(file_name(abc))
