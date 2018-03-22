@@ -1,0 +1,85 @@
+#!/usr/bin/env python
+#A System Information Gathering Script
+import subprocess
+import paramiko
+import os
+import re  
+import time   
+
+fileName = '2B008C08BD80745B95EE1F2E8981BFD2-n1.log'
+arryList = []
+try:
+	try:
+		f= open(fileName,'r+')
+		list1 =f.readlines()
+	except:
+		f= open(fileName,'r+',encoding='utf-8')
+		list1 =f.readlines()
+	for line in list1: 
+		date_all = re.findall(r"(\d{4}-\d{1,2}-\d{1,2}\s\d{1,2}:\d{1,2}:\d{1,2})",line)
+		arryList.append(date_all)
+finally:
+	if f:
+		f.close()
+timeList = []
+for obj in arryList:
+	if len(obj)>0:
+		timeList.append(obj[0])
+
+print(timeList)
+newTimeList = []
+for obj in timeList:
+	timeArray = time.strptime(obj, "%Y-%m-%d %H:%M:%S")
+	timestamp = time.mktime(timeArray)
+	newTimeList.append(int(timestamp))
+
+# print(timeList.sort())
+newTimeList = sorted(newTimeList)
+resultList = []
+quchongResultList = []
+for obj in newTimeList:
+	time_local = time.localtime(int(obj))
+	#转换成新的时间格式(2016-05-05 20:28:54)
+	dt = time.strftime("%Y-%m-%d %H:%M:%S",time_local)
+	if dt not in quchongResultList:
+		quchongResultList.append(dt)
+
+# print(resultList)
+
+print(quchongResultList)
+
+# 排序
+
+
+
+resultFileName =  '排序'+fileName
+
+try:
+	f= open(fileName,'r+',encoding='utf-8')
+	f1 = open(resultFileName,'w',encoding='utf-8')
+	list1 =f.readlines()
+	for abc in quchongResultList:
+		number = 0 
+		for line in list1:
+			if line.find(abc+' ')>-1:
+				f1.write('\n')
+				f1.write(line)
+
+
+finally:
+	if f:
+		f.close()
+	if f1:
+		f1.close()
+
+
+
+# print(date_all)
+
+
+
+
+
+
+
+
