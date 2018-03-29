@@ -1,0 +1,93 @@
+from tkinter import *
+import tkinter  
+from  tkinter  import ttk  
+root = Tk()
+import os
+
+def  main(keyWords):
+	if keyWords.find('--')>-1:
+		flag =1
+		keyWordList = keyWords.split('--')
+	else:
+		flag = 0
+		keyWordList = keyWords.split(';')
+
+	path = 'D:\下载文件\川航app代码'
+	# path = './log'
+	pathWenjian = []
+	for fpathe,dirs,fs in os.walk(path):  
+	    for f in fs:
+	    	# print(dirs)
+	    	pathWenjian.append(os.path.join(fpathe,f))  
+	total = 0
+	arryList = []
+	for pathUrl in  pathWenjian:
+		if pathUrl.find('.java')>-1 or pathUrl.find('.xml')>-1 or pathUrl.find('.html')>-1:
+			try:
+				f= open(pathUrl,'r+',encoding='utf-8',errors='ignore')
+				list1 =f.readlines()
+				for line in list1: 
+					for obj in keyWordList:
+						flagurl = True
+						if obj != '':
+							if flag == 0:
+								if line.find(obj)==-1:
+									flagurl = False
+							if flag ==1:
+								flagurl = False
+								if line.find(obj)>-1:
+									flagurl = True
+					if flagurl:
+						arryList.append(pathUrl)
+					# for obj in keyWordList:
+					# 	if pathUrl.find(obj)>-1:
+					# 		arryList.append(pathUrl)
+
+			finally:
+				if f:
+					f.close()
+	return arryList
+
+
+def regUse():
+	word = str(e_user.get())
+	e_result.delete(0,END)
+	keyWords = word
+	urlList = main(keyWords)
+	result = ''
+	for obj in urlList:
+		obj = obj.replace('\\\\','\\')
+		result = result+obj+'\n'
+		print(obj)
+	if len(result)>0:
+		e_result.insert(0,result)
+	
+
+
+#多关键词（同时存在的用;隔开，或存在的用--分开）
+
+
+
+
+
+
+
+l_user =Label(root,text='关键字：')
+l_user.grid(row=0,sticky=W)
+e_user =Entry(root,width = 10)
+e_user.grid(row=0,column=1,sticky=E)
+ 
+# 第二行，密码标签及输入框
+b_login2 = Button(root,text='查找',command=regUse)
+b_login2.grid(row=2,column=2)
+
+l_result =Label(root,text='结果：')
+l_result.grid(row=3,sticky=W)
+e_result =Entry(root,width = 10)
+e_result.grid(row=3,column=1,sticky=E)
+
+
+
+root.wm_attributes('-topmost',1)
+ 
+root.mainloop()
