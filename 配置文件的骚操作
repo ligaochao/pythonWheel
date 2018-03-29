@@ -1,0 +1,90 @@
+import os
+import codecs
+import configparser
+
+proDir = os.path.split(os.path.realpath(__file__))[0]
+configPath = os.path.join(proDir, "config.ini")
+
+
+class ReadConfig:
+    def __init__(self):
+        fd = open(configPath)
+        data = fd.read()
+
+        #  remove BOM
+        if data[:3] == codecs.BOM_UTF8:
+            data = data[3:]
+            file = codecs.open(configPath, "w")
+            file.write(data)
+            file.close()
+        fd.close()
+
+        self.cf = configparser.ConfigParser()
+        self.cf.read(configPath)
+
+    def get_email(self, name):
+        value = self.cf.get("EMAIL", name)
+        return value
+
+    def get_http(self, name):
+        value = self.cf.get("HTTP", name)
+        return value
+
+    def get_headers(self, name):
+        value = self.cf.get("HEADERS", name)
+        return value
+
+    def set_headers(self, name, value):
+        self.cf.set("HEADERS", name, value)
+        with open(configPath, 'w+') as f:
+            self.cf.write(f)
+
+    def get_url(self, name):
+        value = self.cf.get("URL", name)
+        return value
+
+    def get_db(self, name):
+        value = self.cf.get("DATABASE", name)
+        return value
+
+
+# abc = ReadConfig()
+
+# print(abc.get_email('on_off'))
+
+其中，配置文件是
+
+[EMAIL]
+mail_host = smtp.163.com
+mail_user = abc@163.com
+mail_pass = 123456
+mail_port = 25
+sender = abc@163.com
+receiver = 123456@qq.com/1254367@qq.com
+subject = Interface Test Report
+content = "All interface test has been complited\nplease read the report file about the detile of result in the attachment."
+testuser = Someone
+on_off = off
+
+[HTTP]
+scheme = http
+baseurl = www.baidu.com
+port = 8080
+timeout = 10.0
+
+[HEADERS]
+siteuid = all
+clientid = 100
+token_v = 213612368807_5811a363c85b19.22399915_75e4ee2761d60f2d7597eaec2579297f1cd7f6e3
+token_u = 320012369021_586b1c65c3b3c1.51719831_e76832dc51f7ec8de0ba6ecdd69c8b7658dee93c
+
+[DATABASE]
+host = localhost
+username = root
+password = root
+port = 3306
+database = test
+
+
+
+然后
