@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+</head>
+<body>
+<div id="divProgress" style="width: 1200px;height:800px;"></div>
+</body>
+</html>
+
+
+<script src="http://code.jquery.com/jquery-latest.js"></script>
+<script src="http://echarts.baidu.com/build/dist/echarts.js"></script>
+<script type="text/javascript">
+    var myChart;
+    var test = 10
+    // 路径配置
+    require.config({
+        paths: {
+            echarts: 'http://echarts.baidu.com/build/dist'
+        }
+    });
+    // 使用
+    require(
+        [
+            'echarts',
+            'echarts/chart/line' // 使用柱状图就加载bar模块，按需加载
+        ],
+        function (ec) {
+            // 基于准备好的dom，初始化echarts图表
+             myChart = ec.init(document.getElementById('divProgress'));
+            var option = {
+                tooltip: {
+                    show: true
+                },
+                animation: false,
+                legend: {
+                    data: ['销量']
+                },
+                xAxis: [
+                    {
+                        type: 'category',
+                        data: ["衬衫", "羊毛衫", "雪纺衫", "裤子", "高跟鞋", "袜子"]
+                    }
+                ],
+                yAxis: [
+                    {
+                        type: 'value'
+                    }
+                ],
+                series: [
+                    {
+                        "name": "销量",
+                        "type": "line",
+                        "data": [5, 20, 40, 10, 10, 20]
+                    }
+                ]
+            };
+            // 为echarts对象加载数据 
+            myChart.setOption(option);
+        }
+    );
+
+function RndNum(n){
+    var rnd="";
+    for(var i=0;i<n;i++)
+        rnd+=Math.floor(Math.random()*10);
+    return rnd;
+}
+    
+    //这里用setTimeout代替ajax请求进行演示
+window.setInterval(function () {
+    var data = [test, 5, 10, 40, 20, 10];
+    test = RndNum(2)
+    data = [test, 5, 10, 40, 20, 10];
+    refreshData(data);       
+},3000);
+ 
+function refreshData(data){
+     if(!myChart){
+          return;
+     }
+     
+     //更新数据
+      var option = myChart.getOption();
+      option.series[0].data = data;   
+      myChart.setOption(option);    
+}
+</script>
