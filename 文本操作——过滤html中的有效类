@@ -1,0 +1,35 @@
+import re
+
+def obtainClassList(fileUrl):
+
+	f = open(fileUrl, "r")
+	classList = []
+	first_line = f.readlines()
+	#正则匹配class标签内容
+	for line in first_line:
+		res = r'class=(.*?)>'
+		classList.append(re.findall(res, line))
+	# print(classList)
+	#过滤非空子集
+	non_empty_list = []
+	for obj in classList:
+		if len(obj)>0:
+			for obj1 in obj:
+				non_empty_list.append(obj1)
+
+	# print(non_empty_list)
+	#去掉双引号以及用空格分隔，重整数组
+	no_repeat_class_list = []
+	for obj in non_empty_list:
+		obj = obj.replace('"','')
+		obj = obj.replace("'","")
+		obj_list = obj.split(' ')
+		for obj1 in obj_list:
+			if obj1 not in no_repeat_class_list and len(obj1)>0:
+				no_repeat_class_list.append(obj1)
+	return no_repeat_class_list
+
+fileUrl = './index.html'
+no_repeat_class_list = obtainClassList(fileUrl)
+
+print(no_repeat_class_list)
