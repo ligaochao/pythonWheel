@@ -1,0 +1,93 @@
+import re
+
+def obtainClassList(fileUrl):
+
+	f = open(fileUrl, "r")
+	classList = []
+	first_line = f.readlines()
+	#正则匹配class标签内容
+	for line in first_line:
+		res = r'class=(.*?)>'
+		classList.append(re.findall(res, line))
+	
+	#过滤非空子集
+	non_empty_list = []
+	for obj in classList:
+		if len(obj)>0:
+			for obj1 in obj:
+				non_empty_list.append(obj1)
+	
+	#去掉双引号以及用空格分隔，重整数组
+	no_repeat_class_list = []
+	for obj in non_empty_list:
+		obj = obj.replace('"','')
+		obj = obj.replace("'","")
+		obj_list = obj.split(' ')
+		for obj1 in obj_list:
+			if obj1 not in no_repeat_class_list and len(obj1)>0:
+				no_repeat_class_list.append(obj1)
+	f.close()
+	return no_repeat_class_list
+
+fileUrl = './index.html'
+no_repeat_class_list = obtainClassList(fileUrl)
+
+# print(no_repeat_class_list)
+
+def MatchingClass(cssUrl):
+
+	f = open(cssUrl, "r")
+	classList = []
+	positionLists = []
+	first_line = f.readlines()
+	#正则匹配对应文件起始行信息
+	lineNumber = 0
+	for line in first_line:
+		res = r'.(.*?){'
+		obj = re.findall(res, line)
+		positionList = []
+		if len(obj)>0:
+			for obj1 in obj:
+				if obj1 in no_repeat_class_list:
+					positionList.append(lineNumber)
+					positionList.append(obj1)
+					classList.append(positionList)
+		
+		positionList = []
+		positionList.append(lineNumber)
+		positionList.append(line)
+		positionLists.append(positionList)
+		lineNumber = lineNumber+1
+
+	f.close()
+
+	content = []
+	for obj in classList:
+		indexStart = obj[0]
+		indexEnd =0
+		for obj1 in positionLists:
+			if obj1[0]>= indexStart:
+				indexEnd = obj1[1].find('}')
+				if indexEnd >-1:
+					indexEnd = obj1[0]
+					break
+		content.append(positionLists[indexStart:indexEnd+1])
+	f = open("fuzhi.css", "w")
+	for obj in content:
+		for obj1 in obj:
+			if len(obj1)>0:
+				f.write(obj1[1])
+				# print(obj1[1])
+	f.close()
+
+
+
+
+cssUrl = './index.css'
+
+MatchingClass(cssUrl)
+
+		
+
+
+	
