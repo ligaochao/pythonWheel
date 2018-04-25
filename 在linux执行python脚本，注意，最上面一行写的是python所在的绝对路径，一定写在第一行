@@ -1,0 +1,82 @@
+#!/usr/bin/python
+#A System Information Gathering Script
+import subprocess
+import sys
+import os
+import re
+import time
+
+
+try:
+	f= open('config.txt','r+',encoding='utf-8')
+	list1 =f.readlines()
+	# print(list1)
+	for i in range(0,len(list1)):
+		list1[i] =list1[i].strip('\n')
+		sourceLogPositionLine = list1[i].find('sourceLogPosition')
+		targetLogPositionLine = list1[i].find('targetLogPosition')
+		sourceNameLine = list1[i].find('sourceName')
+		targetNameLine = list1[i].find('targetName')
+		logIntervalLine = list1[i].find('logInterval')
+
+		if sourceLogPositionLine>-1:
+			start = list1[i].find('"')
+			end = list1[i].find('"',start+1)
+			sourceLogPosition = list1[i][start+1:end]
+			# print(sourceLogPosition)
+		if targetLogPositionLine>-1:
+			start = list1[i].find('"')
+			end = list1[i].find('"',start+1)
+			targetLogPosition = list1[i][start+1:end]
+			# print(targetLogPosition)
+		if sourceNameLine>-1:
+			start = list1[i].find('"')
+			end = list1[i].find('"',start+1)
+			sourceName = list1[i][start+1:end]
+			# print(sourceName)
+		if targetNameLine>-1:
+			start = list1[i].find('"')
+			end = list1[i].find('"',start+1)
+			targetName = list1[i][start+1:end]
+			# print(targetName)
+		if logIntervalLine>-1:
+			start = list1[i].find('"')
+			end = list1[i].find('"',start+1)
+			logInterval = list1[i][start+1:end]
+			# print(logInterval)
+finally:
+	if f:
+		f.close()
+
+# time1 = "2018"
+
+
+
+# print(timeServer)
+# 08/Apr/2018:10
+
+transformationList = [['Jan','01'],['Feb','02'],['Mar','03'],['Apr','04'],['May','05'],['June','06'],['july','07'],['Aug','08'],['Sept','09'],['Oct','10'],['Nov','11'],['dec','12']]
+# timeServer = time.strftime('%Y-%m-%d',time.time())
+timeServer = time.strftime('%Y/%m/%d:%H',time.localtime(time.time()))
+
+for obj in transformationList:
+	if timeServer.find(obj[1])>-1:
+		timeServer = timeServer.replace('/'+obj[1]+'/','/'+obj[0]+'/',1)
+
+print(timeServer)
+try:
+	command1 = "cd "+targetLogPosition+";"
+	command2 = "> "+targetName+";"
+	command3 = "cd "+sourceLogPosition+";"
+	command4 = "grep "+timeServer+" "+sourceName +" >>"+targetLogPosition+"/"+targetName+";"
+	commands = command1+command2+command3+command4
+	print(commands)
+	# subprocess.call(commands, shell=True)
+except Exception as e:
+	print(e)
+
+
+
+
+
+
