@@ -1,0 +1,8 @@
+#!/usr/bin/env python3
+import xlrd
+
+book=xlrd.open_workbook('1-test.xlsx',encoding_override='utf-8')
+sheet=book.sheet_by_name('Sheet1')
+# 获取整列的值
+sheet.col_values(0) 
+print(sheet.col_values(0))
