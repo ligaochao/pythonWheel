@@ -1,0 +1,77 @@
+from tkinter import *
+import tkinter  
+from  tkinter  import ttk  
+from tkinter.filedialog import askdirectory
+
+root = Tk()
+import os
+
+
+def regUse():
+	arryList = []
+	fileurl=str(e_file.get())
+	strLift = str(e_left.get())
+	strRight = str(e_right.get())
+	with open(fileurl,'r+',encoding= 'utf-8') as f:
+		for obj in f:
+			leftKey = obj.find(strLift) 
+			abc  = len(strLift)
+			rightKey = obj.find(strRight,leftKey) 
+			if leftKey !=-1:
+				arryList.append(obj[leftKey+abc:rightKey])
+	resultList = []
+	for obj in arryList:
+		if obj not in resultList:
+			resultList.append(obj)
+
+
+	e_result.delete(0,END)
+	e_result.insert(0,str(resultList))
+	print(arryList)
+	# pass
+
+
+
+
+
+
+
+# root = Tk()
+path = StringVar()
+
+
+
+
+
+l_file =Label(root,text='文件路径：')
+l_file.grid(row=0,sticky=W)
+e_file =Entry(root,width = 10)
+e_file.grid(row=0,column=1,sticky=E)
+
+
+
+l_left =Label(root,text='左边：')
+l_left.grid(row=1,sticky=W)
+e_left =Entry(root,width = 10)
+e_left.grid(row=1,column=1,sticky=E)
+
+
+l_right =Label(root,text='右边：')
+l_right.grid(row=2,sticky=W)
+e_right =Entry(root,width = 10)
+e_right.grid(row=2,column=1,sticky=E)
+ 
+# 第二行，密码标签及输入框
+b_login2 = Button(root,text='查找',command=regUse)
+b_login2.grid(row=2,column=2)
+
+l_result =Label(root,text='结果：')
+l_result.grid(row=3,sticky=W)
+e_result =Entry(root,width = 10)
+e_result.grid(row=3,column=1,sticky=E)
+
+
+
+root.wm_attributes('-topmost',1)
+ 
+root.mainloop()
