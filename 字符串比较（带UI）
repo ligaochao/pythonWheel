@@ -1,0 +1,185 @@
+
+from tkinter import *
+import tkinter  
+from  tkinter  import ttk  
+from tkinter.filedialog import askdirectory
+
+root = Tk()
+import os 
+  
+from aip import AipOcr 
+import json 
+import re
+  
+# # 定义常量 
+# APP_ID = '9851066'
+# API_KEY = 'LUGBatgyRGoerR9FZbV4SQYk'
+# SECRET_KEY = 'fB2MNz1c2UHLTximFlC4laXPg7CVfyjV'
+  
+# # 初始化AipFace对象 
+# aipOcr = AipOcr(APP_ID, API_KEY, SECRET_KEY) 
+  
+# # 读取图片 
+# filePath = "test.png"
+# def get_file_content(filePath): 
+#   with open(filePath, 'rb') as fp: 
+#     return fp.read() 
+  
+# # 定义参数变量 
+# options = { 
+#  'detect_direction': 'true', 
+#  'language_type': 'CHN_ENG', 
+# } 
+  
+# 调用通用文字识别接口 
+# result = aipOcr.basicGeneral(get_file_content(filePath), options) 
+# print(result)
+# print(type(result))
+# strTu = ''
+# for obj in result.get('words_result'):
+#         strTu = strTu+obj.get('words')
+
+# print(strTu)
+# 中文对比
+def translate(str):  
+    # line = str.strip().decode('utf-8', 'ignore') 
+    line = str.strip()
+    p2 = re.compile(u'[^\u4e00-\u9fa5]') 
+    zh = " ".join(p2.split(line)).strip()  
+    zh = "".join(zh.split())  
+    outStr = zh  # 经过相关处理后得到中文的文本  
+    return outStr
+
+#数字对比
+def translateNumber(str1):
+    pattern = re.compile(r'\d+')
+    res = re.findall(pattern, str1)
+    return res
+
+#字母对比
+def translateLetter(str1):
+    s1 = re.sub('[^a-zA-Z]*', '', str1)
+    return s1
+
+
+#标点符号
+def translateLetter1(str1):
+    punctuation = ["'","\"",",","，","（","）","(",")","[","]","{","}","。",".",":","：",";","；","!","！"]
+    arryList = []
+    for obj in punctuation:
+        if str1.find(obj)>-1:
+            arryList.append(obj)
+            arryList.append(str1.count(obj))
+    return arryList
+
+
+
+
+
+
+# print(json.dumps(result).decode("unicode-escape")) 
+
+# strTu = "Hertz在美国、澳大利亚、新西兰、多数欧洲国家和亚洲（韩国和日本除外）的门店已经接受中国驾照。去美国、加拿大、澳大利亚、多数欧洲和亚洲（韩国和日本除外）自驾的客人，需同时提供中国驾照英文翻译，并同中国驾照原件同时使用。Hertz为四川航空旅客免费提供中国驾照英文翻译。请关注Hertz官方微信：hertzguojizuche或详询Hertz预订中心400 931 1138。"
+# str1 = "Herez在美国、澳大利亚、新西兰、多数欧蒙国家机亚洲(韩国和日本除外）的门店已经接受中国驾照 去美国、加拿大、澳大利亚、多数欧洲和亚洲（韩国和日本除外）自驾的客人，需同时提供中国驾照英文翻译，并同中国驾照原件同时使用。Hertz为四川航空旅客免费提供中国驾照英文翻译。请关注Hertz官方微信：hertzguojizuche或详询Hertz预订中心4200 921 1138。"
+
+
+
+def regUse():
+
+    strTu = str(e_left.get())
+    str1 = str(e_right.get())
+    arryListD = []
+    strTu_C = translate(strTu)
+    str1_C = translate(str1)
+    try:
+        for x in range(0,len(strTu_C)):
+                if strTu_C[x]!=str1_C[x]:
+                        print('汉字错误:'+str(strTu_C[x-1]+strTu_C[x]))
+                        print('汉字正确:'+str(str1_C[x-1]+str1_C[x]))
+                        arryListD.append('汉字错误:'+str(strTu_C[x-1]+strTu_C[x]))
+                        arryListD.append('汉字正确:'+str(str1_C[x-1]+str1_C[x]))
+    except:
+        arryListD.append('汉字长度不一致')
+
+
+    strTu_N = translateNumber(strTu)
+    str1_N = translateNumber(str1)
+    # print(strTu_N)
+    # print(str1_N)
+    try:
+        for x in range(0,len(strTu_N)):
+                if strTu_N[x]!=str1_N[x]:
+                        print('数字错误:'+str(strTu_N[x]))
+                        print('数字正确:'+str(str1_N[x]))
+                        arryListD.append('数字错误:'+str(strTu_N[x]))
+                        arryListD.append('数字正确:'+str(str1_N[x]))
+    except:
+        arryListD.append('数字长度不一致')
+
+
+    try:
+        strTu_E = translateLetter(strTu)
+        str1_E = translateLetter(str1)
+        for x in range(0,len(strTu_E)):
+                if strTu_E[x]!=str1_E[x]:
+                        print('字母错误:'+str(strTu_E[x-1])+str(strTu_E[x]))
+                        print('字母正确:'+str(str1_E[x-1])+str(str1_E[x]))
+                        arryListD.append('字母错误:'+str(strTu_E[x-1])+str(strTu_E[x]))
+                        arryListD.append('字母正确:'+str(str1_E[x-1])+str(str1_E[x]))
+    except:
+        arryListD.append('字母长度不一致')
+
+
+    strTu_P = translateLetter1(strTu)
+    str1_P = translateLetter1(str1)
+    # print(strTu_P)
+    # print(str1_P)
+    if len(strTu_P)!=len(str1_P):
+        print("特殊字符错误:"+str(strTu_P))
+        print("特殊字符正确:"+str(str1_P))
+        arryListD.append("特殊字符错误:"+str(strTu_P))
+        arryListD.append("特殊字符正确:"+str(str1_P))
+    else:
+        for x in range(0,len(strTu_P)):
+            if strTu_P[x]!=str1_P[x]:
+                print('特殊字符错误:'+str(strTu_P[x-1])+str(strTu_P[x]))
+                print('特殊字符正确:'+str(strTu_P[x-1])+str(str1_P[x]))
+                arryListD.append('特殊字符错误:'+str(strTu_P[x-1]+strTu_P[x]))
+                arryListD.append('特殊字符正确:'+str(strTu_P[x-1]+str1_P[x]))
+
+    e_result.delete(0,END)
+    e_result.insert(0,str(arryListD))
+
+
+
+
+# print(arryListD)
+
+
+
+
+
+l_left =Label(root,text='待检测字符串：')
+l_left.grid(row=1,sticky=W)
+e_left =Entry(root,width = 10)
+e_left.grid(row=1,column=1,sticky=E)
+
+
+l_right =Label(root,text='模板字符串：')
+l_right.grid(row=2,sticky=W)
+e_right =Entry(root,width = 10)
+e_right.grid(row=2,column=1,sticky=E)
+ 
+# 第二行，密码标签及输入框
+b_login2 = Button(root,text='查找',command=regUse)
+b_login2.grid(row=2,column=2)
+
+l_result =Label(root,text='结果：')
+l_result.grid(row=3,sticky=W)
+e_result =Entry(root,width = 10)
+e_result.grid(row=3,column=1,sticky=E)
+
+
+root.wm_attributes('-topmost',1)
+ 
+root.mainloop()
