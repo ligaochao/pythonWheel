@@ -1,0 +1,11 @@
+#!/bin/sh
+tail -f $1|while read line
+    do
+        a=`echo $line|grep "$2"|wc -l`
+        if [ $a -lt 1 ];then
+            echo $line>>zzz.log
+        else
+            break
+        fi
+
+    done
