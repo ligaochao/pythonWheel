@@ -1,0 +1,243 @@
+# -*- coding: utf-8 -*-
+import sys
+from PyQt5 import QtCore
+from PyQt5.QtCore import Qt,QRect
+from PyQt5 import QtGui
+from PyQt5 import QtWidgets
+import random
+from PyQt5.QtWidgets import QApplication,QLabel,QWidget,QVBoxLayout
+import time,random
+import time
+from PIL import Image
+from PIL import ImageChops 
+# from tkinter import * 
+import time
+import win32gui, win32ui, win32con, win32api
+import dataAction
+import translate
+import pyautogui
+import os
+
+
+content = ""
+
+class LcdTime(QtWidgets.QFrame):
+    def __init__(self, parent=None):
+        super(LcdTime, self).__init__(parent)
+
+        self.hour = QLabel(self)
+        self.hour.setGeometry(0, 0, 400, 70)
+        # self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+        # self.hour.setGeometry(QRect(328, 240, 329, 27*4))
+
+        self.hour.setAlignment(Qt.AlignCenter)
+        self.setStyleSheet("QLabel{color: rgb(100,149,237);font-size:30px;font-weight:normal;font-family:Arial;}")
+        # self.hour.setSegmentStyle(QtWidgets.QLCDNumber.Flat)
+        # self.display()
+
+
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.display)
+        self.timer.start(1000)
+
+        self.build_tray()
+        self.central()
+        self.setWindowFlags(Qt.WindowStaysOnTopHint)
+        self.setWindowOpacity(0.05)
+
+        self.setMouseTracking(True)
+        self.Image = Image
+        self.ImageChops = ImageChops
+        self.lastN = ""
+
+    def mousePressEvent(self, event):
+        if event.button() == QtCore.Qt.LeftButton:
+            self.dragPosition = event.globalPos() - self.frameGeometry().topLeft()
+            event.accept()
+        elif event.button() == QtCore.Qt.RightButton:
+            # pyperclip.copy(self.content)
+            rect = self.geometry()
+            print(rect.left(), rect.top())
+            print(rect.width(), rect.height())
+            global content
+            # content = str(rect.left()) + "---" + str(rect.top())
+            # print("11111"+content)
+            content = self.callback(rect.left(),rect.top(),rect.width(),rect.height())
+            # print("11111"+content)
+            # self.window_capture("test.png",rect.left(),rect.top(),rect.width(),rect.height())
+
+    def mouseMoveEvent(self, event):
+        if event.buttons() == QtCore.Qt.LeftButton:
+            self.move(event.globalPos() - self.dragPosition)
+            event.accept()
+
+    def build_tray(self):
+        self.trayIcon = QtWidgets.QSystemTrayIcon(self)
+        self.trayIcon.setIcon(QtGui.QIcon('image/logo.png'))
+        self.trayIcon.show()
+        self.trayIcon.setToolTip('时钟 -LiKui')
+        self.trayIcon.activated.connect(self.trayClick)
+
+        menu = QtWidgets.QMenu()
+        normalAction = menu.addAction('正常显示')
+        miniAction = menu.addAction('最小化托盘')
+        exitAction = menu.addAction('退出')
+        normalAction.triggered.connect(self.showNormal)
+        exitAction.triggered.connect(self.exit)
+        miniAction.triggered.connect(self.showMinimized)
+
+        self.trayIcon.setContextMenu(menu)
+
+    def exit(self):
+        # 不设置Visible为False，退出后TrayIcon不会刷新  i love you
+        self.trayIcon.setVisible(False)
+        sys.exit(0)
+
+    def trayClick(self, reason):
+        if reason == QtWidgets.QSystemTrayIcon.DoubleClick:
+            self.showNormal()
+            self.repaint()
+
+    def display(self):
+        # current = QtCore.QTime.currentTime()
+        # a = random.randint(0,2)
+        # arrLay = ["defrr","fderftghyhujikikioy","defrrrrrrrrrrrrrrr\nrrrrrrrrrrrrrrrrrrrrrrrrrfee"]
+        self.hour.setText("")
+        self.hour.adjustSize();
+        # self.hour.setGeometry(QRect(328, 240, 329, 27*4))
+        self.hour.setWordWrap(True)
+        self.hour.setAlignment(Qt.AlignTop)
+
+    def showNormal(self):
+        super(LcdTime, self).showNormal()
+        self.repaint()
+
+    def central(self):
+        screen = QtWidgets.QDesktopWidget().screenGeometry()
+        size = self.geometry()
+        self.move(screen.width() - size.width(), 0)
+
+    def window_capture(self,filename,x,y,w,h):
+      hwnd = 0 # 窗口的编号，0号表示当前活跃窗口
+      # 根据窗口句柄获取窗口的设备上下文DC（Divice Context）
+      hwndDC = win32gui.GetWindowDC(hwnd)
+      # 根据窗口的DC获取mfcDC
+      mfcDC = win32ui.CreateDCFromHandle(hwndDC)
+      # mfcDC创建可兼容的DC
+      saveDC = mfcDC.CreateCompatibleDC()
+      # 创建bigmap准备保存图片
+      saveBitMap = win32ui.CreateBitmap()
+      # 获取监控器信息
+      MoniterDev = win32api.EnumDisplayMonitors(None, None)
+      # w = MoniterDev[0][2][2]
+      # w = 730
+      # # h = MoniterDev[0][2][3]
+      # h = 100
+      # print w,h　　　#图片大小
+      # 为bitmap开辟空间
+      saveBitMap.CreateCompatibleBitmap(mfcDC, w, h)
+      # 高度saveDC，将截图保存到saveBitmap中
+      saveDC.SelectObject(saveBitMap)
+      # 截取从左上角（0，0）长宽为（w，h）的图片
+      # saveDC.BitBlt((0, 0), (w, h), mfcDC, (318, 584), win32con.SRCCOPY) #普通游戏
+      saveDC.BitBlt((0, 0), (w, h), mfcDC, (x, y), win32con.SRCCOPY) #普通游戏
+      saveBitMap.SaveBitmapFile(saveDC, filename)
+
+    def compare_images(self,path_one, path_two):
+        """
+        比较图片，如果有不同则生成展示不同的图片
+     
+        @参数一: path_one: 第一张图片的路径
+        @参数二: path_two: 第二张图片的路径
+        @参数三: diff_save_location: 不同图的保存路径
+        """
+        print(path_one,path_two)
+        image_one = self.Image.open(path_one)
+        image_two = self.Image.open(path_two)
+        try: 
+            diff = self.ImageChops.difference(image_one, image_two)
+            if diff.getbbox() is None:
+            # 图片间没有任何不同则直接退出
+              return False
+            else:
+              return True
+        except ValueError as e:
+          print(e)
+
+    def callback(self,x,y,w,h):
+        # pyautogui.click(260, 600, clicks=1, interval=0.0, button='left')
+        # time.sleep(2)
+
+        filename =  "test.png"
+        if os.path.exists(filename):
+          #此处需要文件对比
+          filename1 =  "test1.png"
+          self.window_capture(filename1,x,y,w,h)
+          if self.compare_images(filename,filename1) == False:
+            print("文件相同")
+            # time.sleep(5)
+            return None
+          else:
+            self.window_capture(filename,x,y,w,h)
+        # window_capture(filename)
+        dataResult = ""
+        print(filename)
+        try:
+            dataResult = dataAction.getTextBybaidu(filename)
+        except Exception as e:
+            print(e)
+        print("汉字"+dataResult)
+        try:
+          dataResult = translate.getOriginalResult(dataResult.replace('\n'," "))
+        except Exception as e:
+          print(e)
+          # pass
+        # e1.set(dataResult)
+        return dataResult
+
+class SecondWindow(QWidget):
+    def __init__(self, parent=None):
+        super(SecondWindow, self).__init__(parent)
+        self.hour = QLabel(self)
+        self.hour.setGeometry(0, 0, 400, 70)
+        # self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+        # self.hour.setGeometry(QRect(328, 240, 329, 27*4))
+
+        self.hour.setAlignment(Qt.AlignCenter)
+        self.setStyleSheet("QLabel{color: rgb(100,149,237);font-size:30px;font-weight:normal;font-family:Arial;}")
+        # self.resize(200, 200)
+        # self.setStyleSheet("background: black")
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.handle_click)
+        self.timer.start(1000)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+        # self.setMouseTracking(True)
+        self.setMouseTracking(True)
+    def handle_click(self):
+        global content
+        # a = random.randint(0,2)
+        print("defrfr:"+content)
+        # arrLay = ["defrr","fderftghyhujikikioy","defrrrrrrrrrrrrrrr\nrrrrrrrrrrrrrrrrrrrrrrrrrfee"]
+        self.hour.setText(content)
+        self.hour.adjustSize();
+        # self.hour.setGeometry(QRect(328, 240, 329, 27*4))
+        self.hour.setWordWrap(True)
+        self.hour.setAlignment(Qt.AlignTop)
+    def mouseMoveEvent(self, event):
+        if event.buttons() == QtCore.Qt.LeftButton:
+            self.move(event.globalPos() - self.dragPosition)
+            event.accept()
+    def mousePressEvent(self, event):
+        if event.button() == QtCore.Qt.LeftButton:
+            self.dragPosition = event.globalPos() - self.frameGeometry().topLeft()
+            event.accept()
+
+    def handle_close(self):
+        self.close()
+app = QtWidgets.QApplication(sys.argv)
+lcd = LcdTime()
+lcd.show()
+s = SecondWindow()
+s.show()
+sys.exit(app.exec_())
