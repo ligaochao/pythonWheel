@@ -1,0 +1,130 @@
+from PIL import Image
+import pytesseract
+import os
+import re
+"""
+功能描述：把word的图片文字提取出来，并进行一定的格式化处理和识别补救
+"""
+def listdir(path,list_name):  #传入存储的list
+    for file in os.listdir(path):
+        file_path = os.path.join(path, file)  
+        if os.path.isdir(file_path):  
+            listdir(file_path, list_name)  
+        else:
+            # list_name.append(os.path.basename(file_path))
+            list_name.append(file_path)
+
+
+
+
+def verificationCode(imageurl):
+    image = Image.open(imageurl)
+    tessdata_dir_config = '--tessdata-dir "C:\\Program Files (x86)\\Tesseract-OCR\\tessdata"'
+    # vcode = pytesseract.image_to_string(image,config=tessdata_dir_config)
+    # 下面这个是识别简体中文的包
+    vcode = pytesseract.image_to_string(image,lang='chi_sim' ,config = tessdata_dir_config)
+    return vcode
+
+
+def E_trans_to_C(string):
+    E_pun = u',.!?[]()<>"\''
+    C_pun = u'，。！？【】（）《》“‘'
+    table= {ord(f):ord(t) for f,t in zip(E_pun,C_pun)}
+    return string.translate(table)
+
+
+
+
+#替换指定位置字符，这里是一个数组
+def multi_sub(string,p,c):
+        new = []
+        for s in string:
+            new.append(s)
+        for index,point in enumerate(p):
+            new[point] = c[index]
+        return ''.join(new)
+
+
+"""
+处理双引号识别问题
+"""
+def  double_quotation_mark_recognition(strD):
+    arrList = [i.start() for i in re.finditer('“', strD)]
+    if (len(arrList)%2) == 0:
+        pass
+    else:
+        strD = strD + "“"
+        arrList = [i.start() for i in re.finditer('“', strD)]
+    if arrList != None:
+        # print(str(arrList)+" "+ strD)
+        index =  0
+        #位置数组
+        #要替换的字符数组
+        indexList = []
+        strpList = []
+        for obj in arrList:
+            if (index%2) == 0:
+                pass
+            else:
+                # print()
+                indexList.append(obj)
+                strpList.append("”")
+            index = index + 1
+        # print(strD,indexList,strpList)
+        strD = multi_sub(strD,indexList,strpList)
+    return strD
+
+
+
+def  main():
+    lastLine = False
+    strd = []
+    listdir("C:\\Users\\ligc\\Desktop\\脚本\\个人脚本\\个人脚本大整理\\兴趣\\小工具集合\\各种测试的位置\\截屏自动翻译器\\wordContent\\90.files", strd)
+    # print(strd)
+    strD = ""
+    index = 0
+    for obj in strd:
+        print(obj)
+        index = index + 1
+        content = verificationCode(obj)
+        strD = strD + content + "\n###########################################\n"
+        # if index > 1:                                                                                                                          
+        #     break
+    # print(strD)
+    #这里再做一下文本的处理
+    resultList = []
+    strdList = strD.split("\n")
+    for obj in strdList:
+        if lastLine:
+            obj = "————" +obj 
+            lastLine = False
+            # print("首行缩进的："+obj)
+        if obj.replace("\n","") == "" or obj.find("#####")>-1:
+            # print("进来了"+ obj)
+            lastLine = True
+        if obj.find("/")>-1 and obj.find("页")>-1 or obj.find("口")>-1:
+            pass
+        else:
+            obj = obj.replace(",","，")
+            obj = obj.replace("…","……")
+            obj = obj.replace(".","")
+            if obj != None:
+                obj = ''.join(obj.split())
+            obj = E_trans_to_C(obj)
+            # print("1111"+obj)
+            if obj.find("“")>-1:
+                # print("2222"+obj)
+                obj = double_quotation_mark_recognition(obj)
+                # print("333"+obj)
+            resultList.append(obj)
+    strD = "\n".join(resultList)
+    strD = strD.replace("————","  ")
+
+    # print(strD)
+    with open("test.txt","w",encoding = "utf-8") as f:
+        f.write(strD)
+
+
+main()
+
+
