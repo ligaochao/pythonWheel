@@ -1,0 +1,328 @@
+from PIL import Image
+import pytesseract
+import os
+import re
+import dataAction
+import time
+from textwrap3 import wrap
+"""
+功能描述：把word的图片文字提取出来，并进行一定的格式化处理和识别补救
+"""
+def listdir(path,list_name):  #传入存储的list
+    for file in os.listdir(path):
+        file_path = os.path.join(path, file)  
+        if os.path.isdir(file_path):  
+            listdir(file_path, list_name)  
+        else:
+            # list_name.append(os.path.basename(file_path))
+            list_name.append(file_path)
+
+
+
+
+
+
+
+def verificationCode(imageurl):
+    image = Image.open(imageurl)
+    tessdata_dir_config = '--tessdata-dir "C:\\Program Files (x86)\\Tesseract-OCR\\tessdata"'
+    # vcode = pytesseract.image_to_string(image,config=tessdata_dir_config)
+    # 下面这个是识别简体中文的包
+    vcode = pytesseract.image_to_string(image,lang='chi_sim' ,config = tessdata_dir_config)
+    return vcode
+
+
+def E_trans_to_C(string):
+    E_pun = u',.!?[]()<>"\''
+    C_pun = u'，。！？【】（）《》“‘'
+    table= {ord(f):ord(t) for f,t in zip(E_pun,C_pun)}
+    return string.translate(table)
+
+
+
+
+#替换指定位置字符，这里是一个数组
+def multi_sub(string,p,c):
+        new = []
+        for s in string:
+            new.append(s)
+        for index,point in enumerate(p):
+            new[point] = c[index]
+        return ''.join(new)
+
+
+"""
+处理双引号识别问题
+"""
+def  double_quotation_mark_recognition(strD):
+    arrList = [i.start() for i in re.finditer('“', strD)]
+    if (len(arrList)%2) == 0:
+        pass
+    else:
+        if len(strD) < 20:
+            strD = strD + "“"
+            arrList = [i.start() for i in re.finditer('“', strD)]
+
+    if arrList != None:
+        # print(str(arrList)+" "+ strD)
+        index =  0
+        #位置数组
+        #要替换的字符数组
+        indexList = []
+        strpList = []
+        for obj in arrList:
+            if (index%2) == 0:
+                pass
+            else:
+                # print()
+                indexList.append(obj)
+                strpList.append("”")
+            index = index + 1
+        # print(strD,indexList,strpList)
+        strD = multi_sub(strD,indexList,strpList)
+    return strD
+
+
+def  adjusting_the_Length_of_Novels(strD):
+    newList = []
+    index = 0
+    strDList = strD.split('\n')
+    for obj in strDList:
+        if obj.replace('\n',"") != "":
+            if index > 0 or index < len(strDList)-1:
+                if strDList[index].find("———") > -1:
+                    try:
+                        newList[index-1] = newList[index-1] +"&&&"
+                    except Exception as e:
+                        pass
+                    
+                # if  len(strDList[index]) == 20 and len(strDList[index-1]) <40 or  strDList[index].find("———") == -1  : #len(strDList[index-1]) < 20 and
+                #     aaa = newList[index-1]
+                #     bbbb = len(newList[index-1])
+                #     # print("2222222"+aaa)
+                #     flag = False
+                #     if len(aaa)  == 0:
+                #         flag = True
+                #         aaa = newList[index-2]
+                #         # print("有空格")
+
+                #     aaa = aaa + obj[:40-len(aaa)+1]
+                #     if flag:
+                #         newList[index-2] = aaa
+                #         pass
+                #     else:
+                #         newList[index-1] = aaa
+                #     if 40-bbbb < bbbb:
+                #         strDList[index] = obj[40-bbbb+1:]
+                #     else:
+                #         strDList[index] = obj
+                #     obj = obj[40-bbbb+1:]
+                  
+        index = index + 1
+        newList.append(obj)
+    # print(newList)
+    # print(newList)
+    stResult = "\n".join(newList)
+    stResult = stResult.replace("\n","")
+    print(stResult)
+    return stResult
+
+def verificationCode(imageurl):
+    image = Image.open(imageurl)
+    tessdata_dir_config = '--tessdata-dir "C:\\Program Files (x86)\\Tesseract-OCR\\tessdata"'
+    # vcode = pytesseract.image_to_string(image,config=tessdata_dir_config)
+    # 下面这个是识别简体中文的包
+    vcode = pytesseract.image_to_string(image,lang='chi_sim' ,config = tessdata_dir_config)
+    return vcode
+
+def  main():
+    lastLine = False
+    strd = []
+    listdir("D:\\dist\\118.files", strd)
+    # print(strd)
+    urLfile = strd[0].replace(strd[0].split("\\")[-1],"")
+    # print(urLfile)
+    dataList = []
+    for obj in strd:
+        dataList.append(int(obj.replace(urLfile,"").replace(".png","")))
+    dataList.sort()
+    urlList = []
+    for obj in dataList:
+        urlList.append(urLfile+str(obj)+".png")
+    # print(urlList)
+
+
+    # return None
+    strD = ""
+    index = 0
+    for obj in urlList:
+        print(obj)
+        index = index + 1
+        # content = verificationCode(obj)
+        # content = "BBBB报错"
+        # try:
+        #     time.sleep(1)
+        #     content = dataAction.getTextBybaidu(obj)
+        # except Exception as e:
+        #     print(e)
+        #     if obj != None:
+        #         print("识别错误"+str(obj))
+        content = verificationCode(obj)
+        # strD = strD + content + "\nAAAAAAAA\n"
+        strD = strD + "\n" + content+"\nBBBB"
+        # if index > 9:                                                                                                                          
+        #     break
+    with open("test2.txt","w",encoding = "utf-8") as f:
+        f.write(strD)
+        # with open("test2.txt","w",encoding = "utf-8") as f:
+        #     f.write(strD.replace("————","    "))
+    # print(strD)
+    #这里再做一下文本的处理
+#     strD = '''
+#                 " 我 等 这 一 战 很 久 了 , 证 明 我 比 你 更 强 的 时
+# 刻 终 于 到 来 了 ! " 穆 青 鸿 看 着 对 面 的 独 孤 像 雪 ,
+# 没 有 了 往 日 的 高 傲 , 但 是 却 充 满 了 战 意 。 
+#             '''
+    resultList = []
+    strdList = strD.split("\n")
+    print(strdList)
+    for obj in strdList:
+        # obj = obj.replace('\n',"")
+        if lastLine:
+            obj = "————" +obj 
+            lastLine = False
+            # print("首行缩进的："+obj)
+        if obj.replace("\n","") == ""  or len(obj) < 20:
+            # print("进来了"+ obj)
+            lastLine = True
+        if obj.find("第")>-1 and obj.find("章")>-1 :
+            # print("进来了1111"+ obj)
+            obj ="AAAAAAAA" + obj
+        if obj.find("/")>-1 and obj.find("页")>-1 or obj.find("口")>-1:
+            continue
+        elif obj.find("晚上")>-1 and obj.find("页")>-1:
+            continue
+        elif obj.find("/")>-1 and obj.find("章")>-1:
+            continue
+        elif obj.find("/")>-1 and obj.find("页")>-1:
+            continue
+        elif obj.find("21:")>-1 or obj.find("22:")>-1 or obj.find("18:")>-1:
+            continue
+        elif obj.find("%")>-1:
+            continue
+        elif obj.replace("\n","") == "————原网页" or obj.replace("\n","") == "————转码声明":
+            continue
+        elif obj.replace("\n","") == "————晚上":
+            continue
+        elif obj.replace("\n","") == "":
+            continue
+        elif obj.find("章") > -1 and obj.find("【") > -1 or obj.find("章") > -1 and obj.find("[") > -1:
+            # print(obj)
+            continue
+        elif obj.find("章") > -1 and obj.find(")") > -1 or obj.find("章") > -1 and obj.find("(") > -1:
+            continue
+            # print("1122233"+obj)
+        else:
+            
+            obj = obj.replace(",","，")
+            obj = obj.replace("…","……")
+            obj = obj.replace(".","")
+            obj = obj.replace("\"","'")
+            obj = obj.replace("“","‘")
+            obj = obj.replace("”","’")
+            obj = obj.replace("‘","“")
+            obj = obj.replace("’","”")
+            # obj = obj.replace("”"","'")
+            obj = obj.replace("'","“")
+            # obj = obj.replace("‘","“")
+            # obj = obj.replace("’","“")
+            obj = obj.replace("%","#####")
+            if obj != None:
+                obj = ''.join(obj.split())
+            obj = E_trans_to_C(obj)
+            # if obj.find("“")>-1:
+            #     obj = double_quotation_mark_recognition(obj)
+                # resultList.append(obj)
+            # print("111"+obj)
+            # return None
+        resultList.append(obj)
+    strD = "\n".join(resultList)
+    resultList = []
+    for obj in strD.split("————"):
+        resultList.append(double_quotation_mark_recognition(obj).replace("\n","")+"%%%")
+    strD = "————".join(resultList)
+    # print(strD)
+    with open("test.txt","w",encoding = "utf-8") as f:
+        f.write(strD.replace("————","￥￥"))
+    strD = adjusting_the_Length_of_Novels(strD)
+    strD = re.sub('[\n]+', '\n', strD)
+    strD = strD.replace("————1","！").replace("%%%————%%%","%%%").replace("%%%！","！").replace("BBBB%%%————","").replace("BBBBAAAAAAAA","AAAAAAAA").replace("1%%%","！")
+    with open("test1.txt","w",encoding = "utf-8") as f:
+        f.write(strD.replace("————","￥￥").replace("\n","%%%").replace("BBBB",""))
+    # strD = strD.replace("————","  ")
+    # print(strD)
+
+    # strD = strD.replace("————","  ")
+
+    # x = wrap(strD, 30)
+    # print(x)
+    # print(strD)
+    # with open("test.txt","w",encoding = "utf-8") as f:
+    #     f.write(strD)
+
+
+main()
+# strdd = '''
+# ————第一百九十八章谁更强
+# ————接下来的战斗，就是由沈凌空来安排了，
+# 他会让这八个人每个人都交一次手，赢的获得
+# 一分，输的不得分。反正每个人都会碰到的，
+# 所以沈凌空也就直接按照每个人消耗的程度来
+# 安排了。
+# ————尽量让每个人上去战斗的时候，都保持着
+# 最佳状态，虽然这不可能做得到，可也能让那
+# 些消耗过大的学员都一定的时间恢复。
+# ————白宇哲下去之后，接下来上场的就是穆青
+# 鸿很对古做雪了！这显然是八个人之中消耗最
+# 小的人之ニ，还有一个是白宇哲。
+# ————不过毕竟白宇哲刚刚战斗过一场，所以就
+# 先选择他们两人了。当初在不知道白宇哲的实
+# 力之前，穆青鸿和独孤傲雪两人就是全班的话
+# 题人物，经常会有人议论这两人到底谁更强一
+# 些
+# ————但是没有人知道，或许连他们两人自身都
+# ————
+# ————
+# ————
+# ————不敢确定。而今天，他们终于要开始公平的打
+# 一场了。这是排名之争，谁都不会留手的！
+# ————独孤傲雪跟穆青鸿两人本来就认识的，因
+# 为独孤世家跟青峰山的关系很不错，以前相互
+# 见过面。至于关系的话就不太清楚了，似乎这
+# 个月以来，这两人也是很少交流说话的。
+# ————我等这一战很久了，证明我比你更强的时
+# 刻终于到来了！“穆青鸿看着对面的独孤傲雪”
+# 没有了往日的高做，但是却充满了战意
+# ————“对你来说还有意义吗？”独孤做雪面无表
+# 情，给人的感觉依然是那么的冰冷，说话更是
+# 直接。
+# ————果然，穆青鸿听完这话之后，表情变得有
+# 点难看。确实，还有意义吗？原本他是想要做
+# 全班最强，然后通过自己的努力加入妖孽班的
+# 可现在上面还有一个白宇哲，他深刻的明白
+# ————自己绝对不是对手。
+# ————但我也要证明，我最起码比你强！“穆青”
+# 鸿微微一愣之后，马上就调整好自己的心态，
+# ————
+# ————
+# ————
+# ————
+# '''
+# #调整小说每行的长度
+
+
+
+
+
+# adjusting_the_Length_of_Novels(strdd)
+
