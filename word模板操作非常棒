@@ -1,0 +1,55 @@
+from docxtpl import DocxTemplate
+
+# 打印模板
+template = "C:\\Users\\ligc\\Desktop\\物联网\\文档总结\\model.docx"
+
+# 创建邮件合并文档并查看所有字段
+strd = """
+card-job
+card-srv
+gw
+msg-srv
+account-srv
+portal-frt
+portal-srv
+portal-usr
+promote-srv
+sms-relay
+"""
+objDict = {
+    "card-job": [],
+    "card-srv": [],
+    "gw": [],
+    "msg-srv": [],
+    "account-srv": [],
+    "portal-frt": [],
+    "portal-srv": [],
+    "portal-usr": [],
+    "promote-srv": [],
+    "sms-relay": []
+}
+
+
+strdList =  strd.strip().split("\n")
+for obj in strdList:
+    if obj != "":
+        tpl = DocxTemplate('C:\\Users\\ligc\\Desktop\\物联网\\文档总结\\model.docx')
+        objD = objDict.get(obj)
+        context = {
+            'template': obj
+        }
+        if objD != None and objD != []:
+            for index in range(len(objD)):
+                context["parameter"+str(index+1)] = objD[index].split("=")[0]
+                if len(objD[index].split("=")) == 2:
+                    context["value"+str(index+1)] = objD[index].split("=")[1]
+                else:
+                    context["value"+str(index+1)] = "".join(objD[index].split("=")[1:])
+        strX = "C:\\Users\\ligc\\Desktop\\物联网\\文档总结\\cmp_"+obj+"_配置文件.docx"
+        tpl.render(context)
+        tpl.save(strX)
+    
+    # document_1.write(strX)
+
+
+
