@@ -1,0 +1,166 @@
+import xlrd
+
+#sql的类型转换
+def  typeChange(obj):
+  if obj != None:
+    obj = str(obj).strip()
+  else:
+    return obj
+  if obj in ["int","varchar","datetime","bigint"]:
+    return obj
+  if obj != None and obj.lower() in ["int","varchar","datetime","bigint"]:
+    return obj.lower()
+  #兼容其他的类型转换预留
+#sql的长度转换
+def  lengD(obj):
+  if obj != None:
+    obj = str(obj).strip()
+  else:
+    return obj
+  try:
+    obj = int(float(obj))
+    obj = "("+str(obj)+")"
+  except Exception as e:
+    print(e)
+    obj = ""
+  return obj
+
+#sql的非空转换
+def non_empty_conversion(obj):
+  # print(obj)
+  if obj != None:
+    obj = str(obj).strip()
+  else:
+    return obj
+  # print(obj)
+  if obj == "Y":
+    return "NOT NULL"
+  else:
+    return ""
+
+#sql的默认转换
+def default_conversion(obj):
+  if obj != None:
+    obj = str(obj).strip()
+  else:
+    return obj
+  if obj != " " and obj != "":
+    if obj == "NULL":
+      return "DEFAULT NULL"
+    else:
+      return "DEFAULT '"+obj+"'"
+
+
+  else:
+    return ""
+
+#sql的描述转换
+def remarks(obj):
+  if obj != None:
+    obj = str(obj).strip()
+  else:
+    return obj
+  if obj != " " and obj != "":
+    return "COMMENT '"+obj.replace("\"","'").replace("'","\"")+"'"
+  else:
+    return ""
+
+
+
+ 
+def read_excel(file_path):
+    # 获取数据
+    data = xlrd.open_workbook(file_path)
+    # 获取所有sheet名字
+    sheet_names = data.sheet_names()
+    for sheet in sheet_names:
+        # 获取sheet
+        table = data.sheet_by_name(sheet)
+        # 获取总行数
+        nrows = table.nrows  # 包括标题
+        # 获取总列数
+        ncols = table.ncols
+ 
+        # 计算出合并的单元格有哪些
+        colspan = {}
+        if table.merged_cells:
+            for item in table.merged_cells:
+                for row in range(item[0], item[1]):
+                    for col in range(item[2], item[3]):
+                        # 合并单元格的首格是有值的，所以在这里进行了去重
+                        if (row, col) != (item[0], item[2]):
+                            colspan.update({(row, col): (item[0], item[2])})
+        arryList = []
+        # 读取每行数据
+        headList = []
+        for i in range(1, nrows):
+            row = []
+            for j in range(ncols):
+                # 假如碰见合并的单元格坐标，取合并的首格的值即可
+                if colspan.get((i, j)):
+                    row.append(table.cell_value(*colspan.get((i, j))))
+                else:
+                    row.append(table.cell_value(i, j))
+            if i == 1:
+              headList = row
+            else:
+              arryList.append(row)
+        dictList = []
+        #这里生成对象数组
+        strd = "CREATE TABLE `tb_bill` ( "+ "\n"
+        primary_key_identifier = ""
+        # print(headList)
+        for obj in arryList:
+          #这里放一个主键标识
+          stdModle = "`【1】` 【2】【2.5】 【3】 【4】 【5】,"
+          column_name = ""
+          for i in range(0,len(headList)):
+            if headList[i].strip() == "列名":
+              stdModle = stdModle.replace("【1】",obj[i])
+              column_name = obj[i]
+            if headList[i].strip() == "类型":
+              stdModle = stdModle.replace("【2】",typeChange(obj[i]))
+            if headList[i].strip() == "长度":
+              stdModle = stdModle.replace("【2.5】",lengD(obj[i]))
+              # strd = strd + "'"+ typeChange(obj[i])+"'" + " "
+            if headList[i].strip() == "非空":
+              stdModle = stdModle.replace("【3】",non_empty_conversion(obj[i]))
+            if headList[i].strip() == "默认":
+              stdModle = stdModle.replace("【4】",default_conversion(obj[i]))
+              # strd = strd + "'"+ default_conversion(obj[i])+"'" + " "
+            if headList[i].strip() == "描述":
+              stdModle = stdModle.replace("【5】",remarks(obj[i]))
+            if stdModle.find("主键")>-1 or stdModle.find("自增")>-1:
+              # print("进来了")
+              primary_key_identifier  = column_name
+              # strd = strd + "'"+ remarks(obj[i])+"'" + " "
+          stdModle = stdModle.replace("【1】","").replace("【2】","")
+          stdModle = stdModle.replace("【3】","").replace("【4】","")
+          stdModle = stdModle.replace("【5】","").replace("【2.5】","")
+          #最后一个，做一些特殊处理
+          if stdModle.find("主键")>-1 or stdModle.find("自增")>-1:
+            stdModle = stdModle[0:len(stdModle)-1]+ " AUTO_INCREMENT,"
+          if arryList.index(obj) == len(arryList) -1 :
+            stdModle = stdModle + "\n" + "PRIMARY KEY (`"+primary_key_identifier+"`)"
+          strd = strd + stdModle +"\n"
+        strd = strd + ")ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;"
+        print(strd)
+
+
+
+
+   
+
+ 
+        # 读取每列数据
+        for j in range(ncols):
+            col = []
+            for i in range(1, nrows):
+                # 假如碰见合并的单元格坐标，取合并的首格的值即可
+                if colspan.get((i, j)):
+                    col.append(table.cell_value(*colspan.get((i, j))))
+                else:
+                    col.append(table.cell_value(i, j))
+            # print(col)
+
+read_excel("C:\\Users\\ligc\\Desktop\\脚本\\个人脚本\\个人脚本大整理\\兴趣\\小工具集合\\各种测试的位置\\截屏自动翻译器\\test.xlsx")
