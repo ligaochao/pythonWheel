@@ -1,0 +1,243 @@
+#!/usr/bin/env python3
+
+import tkinter as tk
+import threading
+import pyperclip
+import pyautogui
+from pynput.keyboard import Controller, Key, Listener
+from pynput import mouse
+from pynput import keyboard
+from collections import Counter
+
+
+import win32gui
+hwnd_title = dict()
+def get_all_hwnd(hwnd,mouse):
+    if win32gui.IsWindow(hwnd) and win32gui.IsWindowEnabled(hwnd) and win32gui.IsWindowVisible(hwnd):
+        hwnd_title.update({hwnd:win32gui.GetWindowText(hwnd)})
+
+
+
+def  getHwnd():
+    appList = []
+    print(hwnd_title.items())
+    for h,t in hwnd_title.items():
+        if t is not "":
+            t = t.replace("*","").replace(" - Notepad++","")
+            t = t.replace("•","").strip()
+            appList.append(t.replace("(mysite) - Sublime Text (UNREGISTERED)",""))
+    if "tk" == appList[0]:
+        return  appList[1]
+    return appList[0]
+
+lastSentence = None
+#这里记录字符的连续长度
+strList = []
+#这里记录排序后的数组
+copyList = []
+#这里记录窗口变化
+fileUrlOld = None
+#这里记录要被替换的字符串
+replaced_string = None
+replaced_string1 = None  #分中英文
+
+test_list = ['dogwood', 'alpha', 'Acorn', 'Anise', 'Strawberry' ]
+def on_keyrelease(event):
+    global copyList
+    copyList1 = []
+    value = event.widget.get()
+    value = value.strip().lower()
+    if value == '':
+        data = test_list
+        copyList1 = test_list
+    else:
+        data = []
+        index = 1
+        for item in test_list:
+            if value in item.lower():
+                data.append(str(index)+","+item)
+                copyList1.append(item)
+                index = index + 1 
+    copyList = copyList1           
+    listbox_update(data)
+
+def on_keyrelease(sentence):
+    global copyList,fileUrlOld,test_list
+    copyList1 = []
+    win32gui.EnumWindows(get_all_hwnd, 0)
+    # print("当前最新句柄"+getHwnd())
+    fileUrl = getHwnd()
+    if fileUrlOld != fileUrl:
+        fileUrlOld = fileUrl
+        test_list = []
+        # try:
+        abcList = []
+        with open(fileUrl,"r+",encoding = "utf-8") as f:
+            for obj in f:
+                obj = obj.replace("\n","")
+                if obj != "":
+                    objList = obj.split(" ")
+                    for obj1 in objList:
+                        if obj1 not in abcList:
+                            abcList.append(obj1)
+        # print(abcList)#get3
+        test_list = test_list+abcList
+        # except Exception as e:
+        #     print("baocuo"+str(e))
+    # value = event.widget.get()
+    # print(test_list)
+    value = sentence
+    if value == '':
+        data = test_list
+        copyList1 = test_list
+    else:
+        data = []
+        index = 1 #
+        for item in test_list:#get3
+            print(value)
+            if item.lower().find(value)>-1:
+                # print(str(index)+"---"+str(item.lower()))
+                data.append(str(index)+","+item)
+                copyList1.append(item)
+                index = index + 1
+    copyList = copyList1             
+    listbox_update(data)
+
+
+def listbox_update(data):
+    # delete previous data
+    listbox.delete(0, 'end')
+
+    # sorting data #我1
+    # data = sorted(data, key=str.lower)
+
+    # put new data
+    for item in data:
+        listbox.insert('end', item)
+
+
+def on_select(event):
+    # display element selected on list
+    print('(event) previous:', event.widget.get('active'))
+    print('(event)  current:', event.widget.get(event.widget.curselection()))
+    print('---')
+
+#修改文件内容
+def alter(file,old_str,new_str):
+    """
+    替换文件中的字符串
+    :param file:文件名
+    :param old_str:就字符串
+    :param new_str:新字符串
+    :return:
+    """
+    file_data = ""
+    with open(file, "r", encoding="utf-8") as f:
+        for line in f:
+            if old_str in line:
+                line = line.replace(old_str,new_str)
+            file_data += line
+    with open(file,"w",encoding="utf-8") as f:
+        f.write(file_data)
+
+
+def fun_timer(obj,flag):
+    global lastSentence,copyList,replaced_string,replaced_string1
+    # print('Hello Timer!')
+    sentence = pyperclip.paste()
+    if obj in ["1","2","3","4","5","6","7","8","9","0"] and flag == "1":
+        try:
+            print(copyList)
+            pyperclip.copy(copyList[int(obj)-1])
+            if replaced_string !=None and fileUrlOld != None:
+                alter(fileUrlOld,replaced_string+str(obj),"")
+                alter(fileUrlOld,replaced_string1+str(obj),"")
+        except Exception as e:
+            print(e)
+    if flag == "2":
+        sentence = "".join(strList[len(strList)-2*int(obj):len(strList)-int(obj)])
+        lastSentence = None
+        print("字符串是"+str(strList))
+        print("实际的字符串是"+str(sentence))
+        if lastSentence != sentence:
+            lastSentence = sentence
+            on_keyrelease(sentence)
+    
+
+
+
+
+
+
+
+root = tk.Tk()
+
+entry = tk.Entry(root)
+entry.pack()
+entry.bind('<KeyRelease>', on_keyrelease)
+
+def word_count_in_str(string, keyword):
+    return len(string.split(keyword))-1
+
+
+# 监听按压
+def on_press(key):
+    global strList,replaced_string,replaced_string1
+    keyValue = ""
+    try:
+        keyValue = key.char
+    except Exception as e:
+        keyValue = str(key)
+    if keyValue not in ["Key.space","Key.enter","Key.ctrl_l","Key.right","Key.shift_r","Key.shift","Key.alt_l"]:
+        if keyValue not in ["1","2","3","4","5","6","7","8","9","0"]:
+            # print(keyValue)
+            if keyValue.find("Key.") == -1:
+                strList.append(keyValue)
+                if len(strList) > 40:
+                    strList = strList[len(strList)-40:len(strList)]
+                # print("累加的字符串为"+str(strList))
+        else:
+            fun_timer(keyValue,"1")
+        if keyValue in [";"]:
+            result = 0
+            if len(strList)>5:
+                result = word_count_in_str("".join(strList[len(strList)-5:len(strList)]),";")
+            else:
+                result = word_count_in_str("".join(strList),";")
+            # print("字符串为"+str("".join(strList[len(strList)-5:len(strList)])))
+            # print("出现次数"+str(result))
+            if int(result)>1:
+                fun_timer(str(result),"2")
+                replaced_string = ";"*int(result)
+                replaced_string1 = "；"*int(result)
+
+            #这里是汉字识别
+
+
+    # print(strList)
+    # 
+
+
+
+    # print(keyValue)
+
+    # pass
+# 监听按压
+def on_release(key):
+    pass
+# 开始监听
+def start_listen():
+    with Listener(on_press=on_press,on_release=on_release) as listener:
+        listener.join()
+
+import threading
+t= threading.Thread(target = start_listen)
+t.start()
+
+listbox = tk.Listbox(root)
+listbox.pack()
+#listbox.bind('<Double-Button-1>', on_select)
+listbox.bind('<<ListboxSelect>>', on_select)
+listbox_update(test_list)
+root.wm_attributes('-topmost',1)
+root.mainloop()
