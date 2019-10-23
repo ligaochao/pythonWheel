@@ -20,13 +20,17 @@ def get_all_hwnd(hwnd,mouse):
 
 def  getHwnd():
     appList = []
-    print(hwnd_title.items())
+    # print(hwnd_title.items())
     for h,t in hwnd_title.items():
         if t is not "":
             t = t.replace("*","").replace(" - Notepad++","")
             t = t.replace("•","").strip()
-            appList.append(t.replace("(mysite) - Sublime Text (UNREGISTERED)",""))
+            tList = t.split(" ")
+            if t != "tk":
+                appList.append(tList[0].replace("(mysite) - Sublime Text (UNREGISTERED)",""))
     if "tk" == appList[0]:
+        print("试试看有没有走到这个地方"+str(appList[1]))
+        #
         return  appList[1]
     return appList[0]
 
@@ -40,8 +44,12 @@ fileUrlOld = None
 #这里记录要被替换的字符串
 replaced_string = None
 replaced_string1 = None  #分中英文
+#这里记录的是实际值
+realS = ""
+#这里记录上一个按键值
+firstBu=None
 
-test_list = ['dogwood', 'alpha', 'Acorn', 'Anise', 'Strawberry' ]
+test_list = ['dogwood', 'alpha', 'Acorn', 'Anise', 'Strawberry',"你好" ]
 def on_keyrelease(event):
     global copyList
     copyList1 = []
@@ -62,16 +70,17 @@ def on_keyrelease(event):
     listbox_update(data)
 
 def on_keyrelease(sentence):
-    global copyList,fileUrlOld,test_list
+    global copyList,fileUrlOld,test_list,realS
     copyList1 = []
     win32gui.EnumWindows(get_all_hwnd, 0)
     # print("当前最新句柄"+getHwnd())
     fileUrl = getHwnd()
-    if fileUrlOld != fileUrl:
+    if fileUrlOld != fileUrl or fileUrlOld == fileUrl:
         fileUrlOld = fileUrl
         test_list = []
         # try:
         abcList = []
+        print(fileUrl)
         with open(fileUrl,"r+",encoding = "utf-8") as f:
             for obj in f:
                 obj = obj.replace("\n","")
@@ -79,6 +88,13 @@ def on_keyrelease(sentence):
                     objList = obj.split(" ")
                     for obj1 in objList:
                         if obj1 not in abcList:
+                            number = len(sentence)
+                            if obj.find(";"*len(sentence)) > -1 or  obj.find("；"*len(sentence)) > -1:
+                                sentence = obj.replace("；",";").replace(";"*len(sentence),"").strip()
+                                sentence = sentence[len(sentence)-number:len(sentence)]
+                                realS = sentence
+                                print("实际的字符串1是"+str(sentence))
+                               
                             abcList.append(obj1)
         # print(abcList)#get3
         test_list = test_list+abcList
@@ -94,7 +110,7 @@ def on_keyrelease(sentence):
         data = []
         index = 1 #
         for item in test_list:#get3
-            print(value)
+            # print(value)
             if item.lower().find(value)>-1:
                 # print(str(index)+"---"+str(item.lower()))
                 data.append(str(index)+","+item)
@@ -142,16 +158,21 @@ def alter(file,old_str,new_str):
 
 
 def fun_timer(obj,flag):
-    global lastSentence,copyList,replaced_string,replaced_string1
+    global lastSentence,copyList,replaced_string,replaced_string1,realS
     # print('Hello Timer!')
     sentence = pyperclip.paste()
     if obj in ["1","2","3","4","5","6","7","8","9","0"] and flag == "1":
         try:
-            print(copyList)
+            # print(copyList)
             pyperclip.copy(copyList[int(obj)-1])
+            copyResult =  pyperclip.paste()
+            print("老字符串为"+str(realS+replaced_string+str(obj)))
             if replaced_string !=None and fileUrlOld != None:
-                alter(fileUrlOld,replaced_string+str(obj),"")
-                alter(fileUrlOld,replaced_string1+str(obj),"")
+                pyautogui.hotkey('ctrl', 's')
+                alter(fileUrlOld,realS+replaced_string+str(obj),copyResult)
+                alter(fileUrlOld,realS+replaced_string1+str(obj),copyResult)
+                alter(fileUrlOld,replaced_string1,copyResult)
+                alter(fileUrlOld,replaced_string,copyResult)
         except Exception as e:
             print(e)
     if flag == "2":
@@ -162,16 +183,9 @@ def fun_timer(obj,flag):
         if lastSentence != sentence:
             lastSentence = sentence
             on_keyrelease(sentence)
-    
-
-
-
-
-
 
 
 root = tk.Tk()
-
 entry = tk.Entry(root)
 entry.pack()
 entry.bind('<KeyRelease>', on_keyrelease)
@@ -182,22 +196,26 @@ def word_count_in_str(string, keyword):
 
 # 监听按压
 def on_press(key):
-    global strList,replaced_string,replaced_string1
+    global strList,replaced_string,replaced_string1,firstBu
     keyValue = ""
     try:
         keyValue = key.char
     except Exception as e:
         keyValue = str(key)
+    print(keyValue,firstBu)
     if keyValue not in ["Key.space","Key.enter","Key.ctrl_l","Key.right","Key.shift_r","Key.shift","Key.alt_l"]:
-        if keyValue not in ["1","2","3","4","5","6","7","8","9","0"]:
+        if keyValue not in ["1","2","3","4","5","6","7","8","9","0"] :
             # print(keyValue)
             if keyValue.find("Key.") == -1:
                 strList.append(keyValue)
                 if len(strList) > 40:
                     strList = strList[len(strList)-40:len(strList)]
                 # print("累加的字符串为"+str(strList))
-        else:
+        elif firstBu != "Key.shift_r":
             fun_timer(keyValue,"1")
+        
+
+
         if keyValue in [";"]:
             result = 0
             if len(strList)>5:
@@ -207,9 +225,14 @@ def on_press(key):
             # print("字符串为"+str("".join(strList[len(strList)-5:len(strList)])))
             # print("出现次数"+str(result))
             if int(result)>1:
+                pyautogui.hotkey('ctrl', 's')
                 fun_timer(str(result),"2")
                 replaced_string = ";"*int(result)
                 replaced_string1 = "；"*int(result)
+    if firstBu == "Key.shift_r" and keyValue in ["1","2","3","4","5","6","7","8","9","0"]:
+        pass
+    else:
+        firstBu = keyValue
 
             #这里是汉字识别
 
