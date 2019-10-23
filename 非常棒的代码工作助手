@@ -167,7 +167,7 @@ def on_copy(sentence):
 
 
 def on_save(sentence):
-    result = pyautogui.confirm(text=str(sentence)[0:300],title='保存到代码库',buttons=["python","java","功能","js","html","css","取消"])
+    result = pyautogui.confirm(text=str(sentence)[0:300],title='保存到代码库',buttons=["python","java","功能","sql","js","html","css","取消"])
     record_insert_sql = "INSERT INTO code_query  (label,content) VALUES ('AAAA','BBBB')"
     if str(result).find("取消") > -1:
         return None
@@ -339,6 +339,9 @@ def go(*args):   #处理事件，*args表示可变参数
     label = str(comboxlist.get()).strip()
     if label == "功能":
         listbox_update(intelligent_Tips("",label))
+    if label != "功能":
+        root.overrideredirect(False)
+        root.geometry("+1500+100")
 
     print(comboxlist.get()) #打印选中的值
 
@@ -347,7 +350,7 @@ root = tk.Tk()
 
 comvalue=tk.StringVar()#窗体自带的文本，新建一个值
 comboxlist=ttk.Combobox(root,textvariable=comvalue) #初始化
-comboxlist["values"]=("功能","python","java","js","html","css")
+comboxlist["values"]=("功能","python","sql","java","js","html","css")
 comboxlist.current(0)  #选择第一个
 comboxlist.bind("<<ComboboxSelected>>",go)  #绑定事件,(下拉列表框被选中时，绑定go()函数)
 comboxlist.pack()
@@ -364,12 +367,13 @@ def word_count_in_str(string, keyword):
 # 监听按压
 def on_press(key):
     global strList,replaced_string,replaced_string1,firstBu,test_list,label
+    keyValue = ""
+    try:
+        keyValue = key.char
+    except Exception as e:
+        keyValue = str(key)
     if label != "功能":
-        keyValue = ""
-        try:
-            keyValue = key.char
-        except Exception as e:
-            keyValue = str(key)
+        
         # print(keyValue,firstBu)
         if keyValue not in ["Key.space","Key.enter","Key.ctrl_l","Key.right","Key.shift_r","Key.shift","Key.alt_l"]:
             if keyValue not in ["1","2","3","4","5","6","7","8","9","0"] :
@@ -419,6 +423,16 @@ def on_press(key):
 
         else:
             firstBu = keyValue
+    else:
+        if  firstBu == "Key.ctrl_l" and keyValue == "q" or firstBu == "q" and keyValue == "Key.ctrl_l":
+            pyautogui.hotkey('ctrl', 'c')
+            sentence =  pyperclip.paste()
+            on_save(sentence)
+        else:
+            firstBu = keyValue
+
+
+
 
 
     # pass
@@ -439,6 +453,11 @@ scope = 1
 鼠标事件
 """
 last_time = 0
+"""
+鼠标的坐标
+"""
+mouseX = 0
+mouseY = 0
 
 def mouse_click(x, y, button, pressed):
     global last_time
@@ -462,6 +481,9 @@ def mouse_click(x, y, button, pressed):
             # print("进来了")
         # sentence =  pyperclip.paste()
         # print("原来的值为---"+str(sentence))
+            root.overrideredirect(True)
+            root.geometry("+"+str(mouseX)+"+"+str(int(mouseY)+20))
+            # root.attributes("-alpha",0.5)
             pyautogui.hotkey('ctrl','c')
         # sentence =  pyperclip.paste()
         # print("现在的值---"+str(sentence)
@@ -469,7 +491,9 @@ def mouse_click(x, y, button, pressed):
         shoot = 0
 
 def on_move(x, y):
-    global last_time
+    global last_time,mouseX,mouseY
+    mouseX = x
+    mouseY = y
     last_time = last_time + 1
     # print(last_time)
     # 监听鼠标移动
@@ -489,7 +513,7 @@ t.start()
 t1= threading.Thread(target = mouseListener)
 t1.start()
 
-listbox = tk.Listbox(root)
+listbox = tk.Listbox(root,height=15,width=23)
 listbox.pack()
 #listbox.bind('<Double-Button-1>', on_select)
 listbox.bind('<<ListboxSelect>>', on_select)
@@ -499,5 +523,6 @@ if listD != None and listD != []:
     for obj in listD:
         listbox.insert('end', obj)
 # listbox_update(listbox_update(intelligent_Tips("","功能")))
+root.geometry("+1500+100")
 root.wm_attributes('-topmost',1)
 root.mainloop()
