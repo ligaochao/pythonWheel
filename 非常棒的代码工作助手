@@ -11,6 +11,8 @@ from collections import Counter
 from  tkinter  import ttk
 import win32gui
 import pymysql
+import time
+import easygui as g
 
 lastSentence = None
 #这里记录字符的连续长度
@@ -132,12 +134,17 @@ def  getHwnd():
     return appList[0]
 
 
-test_list = ['dogwood', 'alpha', 'Acorn', 'Anise', 'Strawberry',"你好" ]
-def on_keyrelease(event):
-    global copyList
+test_list = []
+def on_copy(sentence):
+    global copyList,test_list,label
+    if len(sentence)>5:
+        return None
+        
+    test_list = test_list + intelligent_Tips(sentence,label)
     copyList1 = []
-    value = event.widget.get()
-    value = value.strip().lower()
+    value = sentence 
+    # value = event.widget.get()
+    # value = value.strip().lower()
     if value == '':
         data = test_list
         copyList1 = test_list
@@ -152,6 +159,15 @@ def on_keyrelease(event):
     copyList = copyList1           
     listbox_update(data)
 
+
+
+def on_save(sentence):
+    result = pyautogui.confirm(text=str(sentence)[0:300],title='保存到代码库',buttons=["python","java","js","html","css","取消"])
+    record_insert_sql = "INSERT INTO code_query  (label,content) VALUES ('AAAA','BBBB')"
+    if str(result).find("取消") > -1:
+        return None
+    saveMysql(record_insert_sql.replace("AAAA",result.replace("\\", "\\\\").replace("'","\\'")).replace("BBBB",str(sentence).replace("\\", "\\\\").replace("'","\\'")))
+    pyautogui.alert(text='录入成功',title='',button='OK') 
 def on_keyrelease(sentence):
     global copyList,fileUrlOld,test_list,realS,label
     copyList1 = []
@@ -178,7 +194,7 @@ def on_keyrelease(sentence):
                                     sentence = sentence[len(sentence)-number:len(sentence)]
                                     realS = sentence
                                     print("实际的字符串1是"+str(sentence))
-                                abcList.append(obj1.replace(";"*len(sentence),""))
+                                abcList.append(obj1.replace(";"*len(sentence),"").replace("；"*len(sentence),""))
         except Exception as e:
             print(e)
         
@@ -222,8 +238,12 @@ def listbox_update(data):
 def on_select(event):
     #这里点击则展示全部的信息
     content = str(event.widget.get(event.widget.curselection()))
-    result = pyautogui.confirm(text=content,title='功能处理',buttons=["复制","翻译","查询"])
-    if str(result).find("复制")>-1:
+    content ="".join(content.split(",")[1:])
+    # print("!!!!!!!!!!!!!!!!!!!!!!!!!")
+    # result1 = pyautogui.confirm(text=content,title='功能处理',buttons=["复制","翻译","查询"])
+    result1 = g.buttonbox(msg=content,title="",choices=("复制","翻译","查询"))
+    print(result1)
+    if None != result1 and str(result1).find("复制")>-1:
         pyperclip.copy(content)
     # display element selected on list
     # print('(event) previous:', event.widget.get('active'))
@@ -261,20 +281,22 @@ def fun_timer(obj,flag):
             # print(copyList)
             pyperclip.copy(copyList[int(obj)-1])
             copyResult =  pyperclip.paste()
-            print("老字符串为"+str(realS+replaced_string+str(obj)))
+            # print("老字符串为"+str(realS+replaced_string+str(obj)))
             if replaced_string !=None and fileUrlOld != None:
                 pyautogui.hotkey('ctrl', 's')
                 alter(fileUrlOld,realS+replaced_string+str(obj),copyResult)
                 alter(fileUrlOld,realS+replaced_string1+str(obj),copyResult)
                 alter(fileUrlOld,replaced_string1,copyResult)
                 alter(fileUrlOld,replaced_string,copyResult)
+            # copyList = []             
+            listbox_update([])
         except Exception as e:
-            print(e)
+            print("1111"+str(e))
     if flag == "2":
         sentence = "".join(strList[len(strList)-2*int(obj):len(strList)-int(obj)])
         lastSentence = None
-        print("字符串是"+str(strList))
-        print("实际的字符串是"+str(sentence))
+        # print("字符串是"+str(strList))
+        # print("实际的字符串是"+str(sentence))
         if lastSentence != sentence:
             lastSentence = sentence
             on_keyrelease(sentence)
@@ -305,13 +327,13 @@ def word_count_in_str(string, keyword):
 
 # 监听按压
 def on_press(key):
-    global strList,replaced_string,replaced_string1,firstBu
+    global strList,replaced_string,replaced_string1,firstBu,test_list
     keyValue = ""
     try:
         keyValue = key.char
     except Exception as e:
         keyValue = str(key)
-    print(keyValue,firstBu)
+    # print(keyValue,firstBu)
     if keyValue not in ["Key.space","Key.enter","Key.ctrl_l","Key.right","Key.shift_r","Key.shift","Key.alt_l"]:
         if keyValue not in ["1","2","3","4","5","6","7","8","9","0"] :
             # print(keyValue)
@@ -321,10 +343,8 @@ def on_press(key):
                     strList = strList[len(strList)-40:len(strList)]
                 # print("累加的字符串为"+str(strList))
         elif firstBu != "Key.shift_r":
+            test_list = []
             fun_timer(keyValue,"1")
-        
-
-
         if keyValue in [";"]:
             result = 0
             if len(strList)>5:
@@ -334,12 +354,27 @@ def on_press(key):
             # print("字符串为"+str("".join(strList[len(strList)-5:len(strList)])))
             # print("出现次数"+str(result))
             if int(result)>1:
+                test_list = []
                 pyautogui.hotkey('ctrl', 's')
                 fun_timer(str(result),"2")
                 replaced_string = ";"*int(result)
                 replaced_string1 = "；"*int(result)
     if firstBu == "Key.shift_r" and keyValue in ["1","2","3","4","5","6","7","8","9","0"]:
         pass
+    elif firstBu == "Key.ctrl_l" and keyValue == "c" or firstBu == "c" and keyValue == "Key.ctrl_l":
+        # pyautogui.hotkey('ctrl', 'c')
+        time.sleep(1)
+        sentence =  pyperclip.paste()
+        test_list = []
+        firstBu = None
+        keyValue = None
+        # print("进来这个分支了--"+str(sentence))
+        on_copy(sentence)
+    elif firstBu == "Key.ctrl_l" and keyValue == "q" or firstBu == "q" and keyValue == "Key.ctrl_l":
+        pyautogui.hotkey('ctrl', 'c')
+        sentence =  pyperclip.paste()
+        on_save(sentence)
+
     else:
         firstBu = keyValue
 
