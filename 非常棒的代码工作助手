@@ -42,7 +42,7 @@ def intelligent_Tips(sentence,label):
     stock_identification = 0   #0：快捷输入库  1：重要信息库  2：代码库， 3 日常记录库
     if str(sentence) != "":
         writing_Template_query_all_sql = "SELECT * from  code_query WHERE  content  LIKE '%BBBB%'  and label = '"+label+"'  ORDER BY  count DESC "
-        # 查询数据库 
+        # 查询数据库 list
         all_record = queryMysql(writing_Template_query_all_sql.replace("BBBB",str(sentence).replace("\n","").replace("\r","").replace(" ","")))
         print(all_record)
         # print(writing_Template_query_all_sql.replace("BBBB",str(sentence).replace("\n","").replace("\r","")))
@@ -137,7 +137,7 @@ def  getHwnd():
 test_list = []
 def on_copy(sentence):
     global copyList,test_list,label
-    if len(sentence)>5:
+    if len(sentence)>10:
         return None
         
     test_list = test_list + intelligent_Tips(sentence,label)
@@ -190,15 +190,17 @@ def on_keyrelease(sentence):
                             if obj1 not in abcList:
                                 number = len(sentence)
                                 if obj.find(";"*len(sentence)) > -1 or  obj.find("；"*len(sentence)) > -1:
+                                    # print("实际的字符串0是"+str(obj))
                                     sentence = obj.replace("；",";").replace(";"*len(sentence),"").strip()
+                                    # print("实际的字符串1是"+str(sentence))
                                     sentence = sentence[len(sentence)-number:len(sentence)]
+                                    # print("实际的字符串2是"+str(sentence))
                                     realS = sentence
-                                    print("实际的字符串1是"+str(sentence))
+                                    # print("实际的字符串3是"+str(sentence))
                                 abcList.append(obj1.replace(";"*len(sentence),"").replace("；"*len(sentence),""))
         except Exception as e:
             print(e)
         
-        # print(abcList)#get3 
         test_list = test_list + intelligent_Tips(sentence,label)
         test_list = test_list+abcList
         # except Exception as e:
@@ -214,7 +216,7 @@ def on_keyrelease(sentence):
         index = 1 #
         for item in test_list:#get3
             # print(value)
-            if item.lower().find(value)>-1:
+            if item.lower().find(value.lower())>-1 :
                 # print(str(index)+"---"+str(item.lower()))
                 data.append(str(index)+","+item)
                 copyList1.append(item)
@@ -226,10 +228,8 @@ def on_keyrelease(sentence):
 def listbox_update(data):
     # delete previous data
     listbox.delete(0, 'end')
-
     # sorting data #我1
-    # data = sorted(data, key=str.lower)
-
+    # data = sorted(data, key=str.lower)List
     # put new data
     for item in data:
         listbox.insert('end', item)
@@ -238,13 +238,19 @@ def listbox_update(data):
 def on_select(event):
     #这里点击则展示全部的信息
     content = str(event.widget.get(event.widget.curselection()))
-    content ="".join(content.split(",")[1:])
+    content =",".join(content.split(",")[1:])
+    #这边可以拓展一系列功能
     # print("!!!!!!!!!!!!!!!!!!!!!!!!!")
     # result1 = pyautogui.confirm(text=content,title='功能处理',buttons=["复制","翻译","查询"])
-    result1 = g.buttonbox(msg=content,title="",choices=("复制","翻译","查询"))
+    result1 = g.buttonbox(msg=content[0:300],title="",choices=("复制","翻译","查询","取消"))
     print(result1)
     if None != result1 and str(result1).find("复制")>-1:
         pyperclip.copy(content)
+    if None != result1 and str(result1).find("取消") == -1:
+        print("进来了----"+content)
+        code_query_update_sql = "UPDATE code_query SET count  = count + 1 WHERE content = 'BBBB'"
+        saveMysql(code_query_update_sql.replace("BBBB",content.replace("\\", "\\\\").replace("'","\\'")))
+
     # display element selected on list
     # print('(event) previous:', event.widget.get('active'))
     # print('(event)  current:', event.widget.get(event.widget.curselection()))
@@ -286,8 +292,8 @@ def fun_timer(obj,flag):
                 pyautogui.hotkey('ctrl', 's')
                 alter(fileUrlOld,realS+replaced_string+str(obj),copyResult)
                 alter(fileUrlOld,realS+replaced_string1+str(obj),copyResult)
-                alter(fileUrlOld,replaced_string1,copyResult)
-                alter(fileUrlOld,replaced_string,copyResult)
+                # alter(fileUrlOld,replaced_string1,copyResult)
+                # alter(fileUrlOld,replaced_string,copyResult)
             # copyList = []             
             listbox_update([])
         except Exception as e:
@@ -344,11 +350,15 @@ def on_press(key):
                 # print("累加的字符串为"+str(strList))
         elif firstBu != "Key.shift_r":
             test_list = []
-            fun_timer(keyValue,"1")
+            strdd = "".join(strList)
+            # print(strList)
+            if strdd.find(";;")>-1 or strdd.find("；；")>-1:
+                if ";" in strList[len(strList)-3:len(strList)]  or "；" in strList[len(strList)-3:len(strList)]:
+                    fun_timer(keyValue,"1")
         if keyValue in [";"]:
             result = 0
-            if len(strList)>5:
-                result = word_count_in_str("".join(strList[len(strList)-5:len(strList)]),";")
+            if len(strList)>10:
+                result = word_count_in_str("".join(strList[len(strList)-10:len(strList)]),";")
             else:
                 result = word_count_in_str("".join(strList),";")
             # print("字符串为"+str("".join(strList[len(strList)-5:len(strList)])))
@@ -365,6 +375,7 @@ def on_press(key):
         # pyautogui.hotkey('ctrl', 'c')
         time.sleep(1)
         sentence =  pyperclip.paste()
+        print("拷贝的内容是---"+sentence)
         test_list = []
         firstBu = None
         keyValue = None
