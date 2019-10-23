@@ -5,6 +5,8 @@ import threading
 import pyperclip
 import pyautogui
 from pynput.keyboard import Controller, Key, Listener
+
+from pynput.mouse import Button, Listener as ListenerMouse, Controller
 from pynput import mouse
 from pynput import keyboard
 from collections import Counter
@@ -251,12 +253,12 @@ def on_select(event):
         return False
     if label == "功能":
         # 模拟快捷键，热键
-        # print("进入功能区")
+        print("进入功能区")
         # pyautogui.hotkey('ctrl', 'c')
         #获取粘贴板内容
         sentence =  pyperclip.paste()
         if content == "翻译":
-            print(sentence)
+            print("进入翻译了---"+sentence)
         elif content == "格式化Json":
             pass
 
@@ -428,9 +430,64 @@ def start_listen():
     with Listener(on_press=on_press,on_release=on_release) as listener:
         listener.join()
 
+
+# 左键
+shoot = 0
+# 右键
+scope = 1
+"""
+鼠标事件
+"""
+last_time = 0
+
+def mouse_click(x, y, button, pressed):
+    global last_time
+    # print("简历了")
+    global shoot
+    global scope
+    global label
+    if pressed:
+        # 点击右键
+        if button == Button.right:
+            scope = 0
+        # 点击左键
+        if button == Button.left:
+            last_time = 0
+            shoot = 1
+    # print(pressed)
+    if pressed == False:
+        continueTime = last_time
+        last_time = 0
+        if label == "功能" and continueTime > 5:
+            # print("进来了")
+        # sentence =  pyperclip.paste()
+        # print("原来的值为---"+str(sentence))
+            pyautogui.hotkey('ctrl','c')
+        # sentence =  pyperclip.paste()
+        # print("现在的值---"+str(sentence)
+    if not pressed and button == Button.left:
+        shoot = 0
+
+def on_move(x, y):
+    global last_time
+    last_time = last_time + 1
+    # print(last_time)
+    # 监听鼠标移动
+    # print('Pointer moved to {0}'.format((x, y)))
+
+
+"""
+监听事件方法
+"""
+def mouseListener():
+    with ListenerMouse(on_click=mouse_click,on_move = on_move) as listener1:
+        listener1.join()
+
 import threading
 t= threading.Thread(target = start_listen)
 t.start()
+t1= threading.Thread(target = mouseListener)
+t1.start()
 
 listbox = tk.Listbox(root)
 listbox.pack()
