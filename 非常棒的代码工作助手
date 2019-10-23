@@ -8,10 +8,107 @@ from pynput.keyboard import Controller, Key, Listener
 from pynput import mouse
 from pynput import keyboard
 from collections import Counter
-
-
+from  tkinter  import ttk
 import win32gui
+import pymysql
+
+lastSentence = None
+#这里记录字符的连续长度
+strList = []
+#这里记录排序后的数组
+copyList = []
+#这里记录窗口变化
+fileUrlOld = None
+#这里记录要被替换的字符串
+replaced_string = None
+replaced_string1 = None  #分中英文
+#这里记录的是实际值
+realS = ""
+#这里记录上一个按键值
+firstBu=None
+#这里记录全局的标签
+label = "python"
+
+
+
+
 hwnd_title = dict()
+"""
+智能提示
+"""
+def intelligent_Tips(sentence,label):
+    stock_identification = 0   #0：快捷输入库  1：重要信息库  2：代码库， 3 日常记录库
+    if str(sentence) != "":
+        writing_Template_query_all_sql = "SELECT * from  code_query WHERE  content  LIKE '%BBBB%'  and label = '"+label+"'  ORDER BY  count DESC "
+        # 查询数据库 
+        all_record = queryMysql(writing_Template_query_all_sql.replace("BBBB",str(sentence).replace("\n","").replace("\r","").replace(" ","")))
+        print(all_record)
+        # print(writing_Template_query_all_sql.replace("BBBB",str(sentence).replace("\n","").replace("\r","")))
+        contentList = []
+        for obj in all_record:
+            contentList.append(obj.get("content"))
+    return contentList
+
+     
+
+
+
+#把数据库查询结果转换为json
+def sql_fetch_json(cursor: pymysql.cursors.Cursor):
+    """
+    Convert the pymysql SELECT result to json format
+    :param cursor:
+    :return:
+    """
+    keys = []
+    for column in cursor.description:
+        keys.append(column[0])
+    key_number = len(keys)
+
+    json_data = []
+    for row in cursor.fetchall():
+        print(row)  #java
+        # item = dict()
+        item = {}
+        for q in range(key_number):
+            item[keys[q]] = row[q]
+        json_data.append(item)
+
+    return json_data
+
+#查询通用接口
+def  queryMysql(sql,dbName="personal_product"):
+    # 打开数据库连接
+    db = pymysql.connect("localhost", "root", "lgc057171", dbName, charset='utf8' )
+    # 使用cursor()方法获取操作游标 
+    cursor = db.cursor()
+    # 使用execute方法执行SQL语句
+    cursor.execute(sql)
+    # 使用 fetchone() 方法获取一条数据
+    # data = cursor.fetchone()
+    data = sql_fetch_json(cursor)
+    # print(data)
+    # 关闭数据库连接
+    db.close()
+    return data 
+# 插入,更新，删除通用接口
+def  saveMysql(sql,dbName="personal_product"):
+    # 打开数据库连接
+    db = pymysql.connect("localhost", "root", "lgc057171", dbName, charset='utf8' )
+    # 使用cursor()方法获取操作游标 
+    cur= db.cursor()
+    # 使用execute方法执行SQL语句
+    try:
+        cur.execute(sql)
+        #提交
+        db.commit()
+    except Exception as e:
+        #错误回滚
+        print(e)
+        db.rollback() 
+    finally:
+        db.close()
+    return True
 def get_all_hwnd(hwnd,mouse):
     if win32gui.IsWindow(hwnd) and win32gui.IsWindowEnabled(hwnd) and win32gui.IsWindowVisible(hwnd):
         hwnd_title.update({hwnd:win32gui.GetWindowText(hwnd)})
@@ -34,20 +131,6 @@ def  getHwnd():
         return  appList[1]
     return appList[0]
 
-lastSentence = None
-#这里记录字符的连续长度
-strList = []
-#这里记录排序后的数组
-copyList = []
-#这里记录窗口变化
-fileUrlOld = None
-#这里记录要被替换的字符串
-replaced_string = None
-replaced_string1 = None  #分中英文
-#这里记录的是实际值
-realS = ""
-#这里记录上一个按键值
-firstBu=None
 
 test_list = ['dogwood', 'alpha', 'Acorn', 'Anise', 'Strawberry',"你好" ]
 def on_keyrelease(event):
@@ -70,7 +153,7 @@ def on_keyrelease(event):
     listbox_update(data)
 
 def on_keyrelease(sentence):
-    global copyList,fileUrlOld,test_list,realS
+    global copyList,fileUrlOld,test_list,realS,label
     copyList1 = []
     win32gui.EnumWindows(get_all_hwnd, 0)
     # print("当前最新句柄"+getHwnd())
@@ -81,22 +164,26 @@ def on_keyrelease(sentence):
         # try:
         abcList = []
         print(fileUrl)
-        with open(fileUrl,"r+",encoding = "utf-8") as f:
-            for obj in f:
-                obj = obj.replace("\n","")
-                if obj != "":
-                    objList = obj.split(" ")
-                    for obj1 in objList:
-                        if obj1 not in abcList:
-                            number = len(sentence)
-                            if obj.find(";"*len(sentence)) > -1 or  obj.find("；"*len(sentence)) > -1:
-                                sentence = obj.replace("；",";").replace(";"*len(sentence),"").strip()
-                                sentence = sentence[len(sentence)-number:len(sentence)]
-                                realS = sentence
-                                print("实际的字符串1是"+str(sentence))
-                               
-                            abcList.append(obj1)
-        # print(abcList)#get3
+        try:
+            with open(fileUrl,"r+",encoding = "utf-8") as f:
+                for obj in f:
+                    obj = obj.replace("\n","")
+                    if obj != "":
+                        objList = obj.split(" ")
+                        for obj1 in objList:
+                            if obj1 not in abcList:
+                                number = len(sentence)
+                                if obj.find(";"*len(sentence)) > -1 or  obj.find("；"*len(sentence)) > -1:
+                                    sentence = obj.replace("；",";").replace(";"*len(sentence),"").strip()
+                                    sentence = sentence[len(sentence)-number:len(sentence)]
+                                    realS = sentence
+                                    print("实际的字符串1是"+str(sentence))
+                                abcList.append(obj1.replace(";"*len(sentence),""))
+        except Exception as e:
+            print(e)
+        
+        # print(abcList)#get3 
+        test_list = test_list + intelligent_Tips(sentence,label)
         test_list = test_list+abcList
         # except Exception as e:
         #     print("baocuo"+str(e))
@@ -133,10 +220,17 @@ def listbox_update(data):
 
 
 def on_select(event):
+    #这里点击则展示全部的信息
+    content = str(event.widget.get(event.widget.curselection()))
+    result = pyautogui.confirm(text=content,title='功能处理',buttons=["复制","翻译","查询"])
+    if str(result).find("复制")>-1:
+        pyperclip.copy(content)
     # display element selected on list
-    print('(event) previous:', event.widget.get('active'))
-    print('(event)  current:', event.widget.get(event.widget.curselection()))
-    print('---')
+    # print('(event) previous:', event.widget.get('active'))
+    # print('(event)  current:', event.widget.get(event.widget.curselection()))
+    # print('---')
+
+# def on_select(event):
 
 #修改文件内容
 def alter(file,old_str,new_str):
@@ -148,6 +242,7 @@ def alter(file,old_str,new_str):
     :return:
     """
     file_data = ""
+    # print("新字符串是"+new_str)
     with open(file, "r", encoding="utf-8") as f:
         for line in f:
             if old_str in line:
@@ -184,11 +279,25 @@ def fun_timer(obj,flag):
             lastSentence = sentence
             on_keyrelease(sentence)
 
+def go(*args):   #处理事件，*args表示可变参数
+    global label
+    label = str(comboxlist.get()).strip()
+    print(comboxlist.get()) #打印选中的值
+
 
 root = tk.Tk()
-entry = tk.Entry(root)
-entry.pack()
-entry.bind('<KeyRelease>', on_keyrelease)
+
+comvalue=tk.StringVar()#窗体自带的文本，新建一个值
+comboxlist=ttk.Combobox(root,textvariable=comvalue) #初始化
+comboxlist["values"]=("python","java","js","html","css")
+comboxlist.current(0)  #选择第一个
+comboxlist.bind("<<ComboboxSelected>>",go)  #绑定事件,(下拉列表框被选中时，绑定go()函数)
+comboxlist.pack()
+
+
+# entry = tk.Entry(root)
+# entry.pack()
+# entry.bind('<KeyRelease>', on_keyrelease)
 
 def word_count_in_str(string, keyword):
     return len(string.split(keyword))-1
@@ -234,15 +343,6 @@ def on_press(key):
     else:
         firstBu = keyValue
 
-            #这里是汉字识别
-
-
-    # print(strList)
-    # 
-
-
-
-    # print(keyValue)
 
     # pass
 # 监听按压
