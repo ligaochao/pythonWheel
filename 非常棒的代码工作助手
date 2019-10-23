@@ -29,7 +29,9 @@ realS = ""
 #这里记录上一个按键值
 firstBu=None
 #这里记录全局的标签
-label = "python"
+label = "功能"
+#
+contentList = []
 
 
 
@@ -39,16 +41,17 @@ hwnd_title = dict()
 智能提示
 """
 def intelligent_Tips(sentence,label):
+    global contentList
     stock_identification = 0   #0：快捷输入库  1：重要信息库  2：代码库， 3 日常记录库
-    if str(sentence) != "":
-        writing_Template_query_all_sql = "SELECT * from  code_query WHERE  content  LIKE '%BBBB%'  and label = '"+label+"'  ORDER BY  count DESC "
-        # 查询数据库 list
-        all_record = queryMysql(writing_Template_query_all_sql.replace("BBBB",str(sentence).replace("\n","").replace("\r","").replace(" ","")))
-        print(all_record)
-        # print(writing_Template_query_all_sql.replace("BBBB",str(sentence).replace("\n","").replace("\r","")))
-        contentList = []
-        for obj in all_record:
-            contentList.append(obj.get("content"))
+    # if str(sentence) != "":
+    writing_Template_query_all_sql = "SELECT * from  code_query WHERE  content  LIKE '%BBBB%'  and label = '"+label+"'  ORDER BY  count DESC "
+    # 查询数据库 list
+    all_record = queryMysql(writing_Template_query_all_sql.replace("BBBB",str(sentence).replace("\n","").replace("\r","").replace(" ","")))
+    print(all_record)
+    # print(writing_Template_query_all_sql.replace("BBBB",str(sentence).replace("\n","").replace("\r","")))
+    contentList = []
+    for obj in all_record:
+        contentList.append(obj.get("content"))
     return contentList
 
      
@@ -162,7 +165,7 @@ def on_copy(sentence):
 
 
 def on_save(sentence):
-    result = pyautogui.confirm(text=str(sentence)[0:300],title='保存到代码库',buttons=["python","java","js","html","css","取消"])
+    result = pyautogui.confirm(text=str(sentence)[0:300],title='保存到代码库',buttons=["python","java","功能","js","html","css","取消"])
     record_insert_sql = "INSERT INTO code_query  (label,content) VALUES ('AAAA','BBBB')"
     if str(result).find("取消") > -1:
         return None
@@ -231,25 +234,47 @@ def listbox_update(data):
     # sorting data #我1
     # data = sorted(data, key=str.lower)List
     # put new data
-    for item in data:
-        listbox.insert('end', item)
+    if data != None and data != []:
+        for item in data:
+            listbox.insert('end', item)
 
 
 def on_select(event):
+    global label
     #这里点击则展示全部的信息
-    content = str(event.widget.get(event.widget.curselection()))
-    content =",".join(content.split(",")[1:])
-    #这边可以拓展一系列功能
-    # print("!!!!!!!!!!!!!!!!!!!!!!!!!")
-    # result1 = pyautogui.confirm(text=content,title='功能处理',buttons=["复制","翻译","查询"])
-    result1 = g.buttonbox(msg=content[0:300],title="",choices=("复制","翻译","查询","取消"))
-    print(result1)
-    if None != result1 and str(result1).find("复制")>-1:
-        pyperclip.copy(content)
-    if None != result1 and str(result1).find("取消") == -1:
-        print("进来了----"+content)
+    content = ""
+    try:
+        content = str(event.widget.get(event.widget.curselection()))
+    except Exception as e:
+        print(e)
+    if content == "":
+        return False
+    if label == "功能":
+        # 模拟快捷键，热键
+        # print("进入功能区")
+        # pyautogui.hotkey('ctrl', 'c')
+        #获取粘贴板内容
+        sentence =  pyperclip.paste()
+        if content == "翻译":
+            print(sentence)
+        elif content == "格式化Json":
+            pass
+
         code_query_update_sql = "UPDATE code_query SET count  = count + 1 WHERE content = 'BBBB'"
         saveMysql(code_query_update_sql.replace("BBBB",content.replace("\\", "\\\\").replace("'","\\'")))
+    else:
+        content =",".join(content.split(",")[1:])
+        #这边可以拓展一系列功能
+        # print("!!!!!!!!!!!!!!!!!!!!!!!!!")
+        # result1 = pyautogui.confirm(text=content,title='功能处理',buttons=["复制","翻译","查询"])
+        result1 = g.buttonbox(msg=content[0:300],title="",choices=("复制","翻译","查询","取消"))
+        print(result1)
+        if None != result1 and str(result1).find("复制")>-1:
+            pyperclip.copy(content)
+        if None != result1 and str(result1).find("取消") == -1:
+            print("进来了----"+content)
+            code_query_update_sql = "UPDATE code_query SET count  = count + 1 WHERE content = 'BBBB'"
+            saveMysql(code_query_update_sql.replace("BBBB",content.replace("\\", "\\\\").replace("'","\\'")))
 
     # display element selected on list
     # print('(event) previous:', event.widget.get('active'))
@@ -310,6 +335,9 @@ def fun_timer(obj,flag):
 def go(*args):   #处理事件，*args表示可变参数
     global label
     label = str(comboxlist.get()).strip()
+    if label == "功能":
+        listbox_update(intelligent_Tips("",label))
+
     print(comboxlist.get()) #打印选中的值
 
 
@@ -317,7 +345,7 @@ root = tk.Tk()
 
 comvalue=tk.StringVar()#窗体自带的文本，新建一个值
 comboxlist=ttk.Combobox(root,textvariable=comvalue) #初始化
-comboxlist["values"]=("python","java","js","html","css")
+comboxlist["values"]=("功能","python","java","js","html","css")
 comboxlist.current(0)  #选择第一个
 comboxlist.bind("<<ComboboxSelected>>",go)  #绑定事件,(下拉列表框被选中时，绑定go()函数)
 comboxlist.pack()
@@ -333,61 +361,62 @@ def word_count_in_str(string, keyword):
 
 # 监听按压
 def on_press(key):
-    global strList,replaced_string,replaced_string1,firstBu,test_list
-    keyValue = ""
-    try:
-        keyValue = key.char
-    except Exception as e:
-        keyValue = str(key)
-    # print(keyValue,firstBu)
-    if keyValue not in ["Key.space","Key.enter","Key.ctrl_l","Key.right","Key.shift_r","Key.shift","Key.alt_l"]:
-        if keyValue not in ["1","2","3","4","5","6","7","8","9","0"] :
-            # print(keyValue)
-            if keyValue.find("Key.") == -1:
-                strList.append(keyValue)
-                if len(strList) > 40:
-                    strList = strList[len(strList)-40:len(strList)]
-                # print("累加的字符串为"+str(strList))
-        elif firstBu != "Key.shift_r":
-            test_list = []
-            strdd = "".join(strList)
-            # print(strList)
-            if strdd.find(";;")>-1 or strdd.find("；；")>-1:
-                if ";" in strList[len(strList)-3:len(strList)]  or "；" in strList[len(strList)-3:len(strList)]:
-                    fun_timer(keyValue,"1")
-        if keyValue in [";"]:
-            result = 0
-            if len(strList)>10:
-                result = word_count_in_str("".join(strList[len(strList)-10:len(strList)]),";")
-            else:
-                result = word_count_in_str("".join(strList),";")
-            # print("字符串为"+str("".join(strList[len(strList)-5:len(strList)])))
-            # print("出现次数"+str(result))
-            if int(result)>1:
+    global strList,replaced_string,replaced_string1,firstBu,test_list,label
+    if label != "功能":
+        keyValue = ""
+        try:
+            keyValue = key.char
+        except Exception as e:
+            keyValue = str(key)
+        # print(keyValue,firstBu)
+        if keyValue not in ["Key.space","Key.enter","Key.ctrl_l","Key.right","Key.shift_r","Key.shift","Key.alt_l"]:
+            if keyValue not in ["1","2","3","4","5","6","7","8","9","0"] :
+                # print(keyValue)
+                if keyValue.find("Key.") == -1:
+                    strList.append(keyValue)
+                    if len(strList) > 40:
+                        strList = strList[len(strList)-40:len(strList)]
+                    # print("累加的字符串为"+str(strList))
+            elif firstBu != "Key.shift_r":
                 test_list = []
-                pyautogui.hotkey('ctrl', 's')
-                fun_timer(str(result),"2")
-                replaced_string = ";"*int(result)
-                replaced_string1 = "；"*int(result)
-    if firstBu == "Key.shift_r" and keyValue in ["1","2","3","4","5","6","7","8","9","0"]:
-        pass
-    elif firstBu == "Key.ctrl_l" and keyValue == "c" or firstBu == "c" and keyValue == "Key.ctrl_l":
-        # pyautogui.hotkey('ctrl', 'c')
-        time.sleep(1)
-        sentence =  pyperclip.paste()
-        print("拷贝的内容是---"+sentence)
-        test_list = []
-        firstBu = None
-        keyValue = None
-        # print("进来这个分支了--"+str(sentence))
-        on_copy(sentence)
-    elif firstBu == "Key.ctrl_l" and keyValue == "q" or firstBu == "q" and keyValue == "Key.ctrl_l":
-        pyautogui.hotkey('ctrl', 'c')
-        sentence =  pyperclip.paste()
-        on_save(sentence)
+                strdd = "".join(strList)
+                # print(strList)
+                if strdd.find(";;")>-1 or strdd.find("；；")>-1:
+                    if ";" in strList[len(strList)-3:len(strList)]  or "；" in strList[len(strList)-3:len(strList)]:
+                        fun_timer(keyValue,"1")
+            if keyValue in [";"]:
+                result = 0
+                if len(strList)>10:
+                    result = word_count_in_str("".join(strList[len(strList)-10:len(strList)]),";")
+                else:
+                    result = word_count_in_str("".join(strList),";")
+                # print("字符串为"+str("".join(strList[len(strList)-5:len(strList)])))
+                # print("出现次数"+str(result))
+                if int(result)>1:
+                    test_list = []
+                    pyautogui.hotkey('ctrl', 's')
+                    fun_timer(str(result),"2")
+                    replaced_string = ";"*int(result)
+                    replaced_string1 = "；"*int(result)
+        if firstBu == "Key.shift_r" and keyValue in ["1","2","3","4","5","6","7","8","9","0"]:
+            pass
+        elif firstBu == "Key.ctrl_l" and keyValue == "c" or firstBu == "c" and keyValue == "Key.ctrl_l":
+            # pyautogui.hotkey('ctrl', 'c')
+            time.sleep(1)
+            sentence =  pyperclip.paste()
+            print("拷贝的内容是---"+sentence)
+            test_list = []
+            firstBu = None
+            keyValue = None
+            # print("进来这个分支了--"+str(sentence))
+            on_copy(sentence)
+        elif firstBu == "Key.ctrl_l" and keyValue == "q" or firstBu == "q" and keyValue == "Key.ctrl_l":
+            pyautogui.hotkey('ctrl', 'c')
+            sentence =  pyperclip.paste()
+            on_save(sentence)
 
-    else:
-        firstBu = keyValue
+        else:
+            firstBu = keyValue
 
 
     # pass
@@ -407,6 +436,11 @@ listbox = tk.Listbox(root)
 listbox.pack()
 #listbox.bind('<Double-Button-1>', on_select)
 listbox.bind('<<ListboxSelect>>', on_select)
-listbox_update(test_list)
+listD = listbox_update(intelligent_Tips("","功能"))
+print(listD)
+if listD != None and listD != []:
+    for obj in listD:
+        listbox.insert('end', obj)
+# listbox_update(listbox_update(intelligent_Tips("","功能")))
 root.wm_attributes('-topmost',1)
 root.mainloop()
