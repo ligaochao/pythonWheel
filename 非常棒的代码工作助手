@@ -168,9 +168,21 @@ def on_copy(sentence):
 
 
 def on_save(sentence):
-    result = pyautogui.confirm(text=str(sentence)[0:300],title='保存到代码库',buttons=["python","java","功能","sql","js","html","css","取消"])
+    global actionFalg
+    result = pyautogui.confirm(text=str(sentence)[0:300],title='保存到代码库',buttons=["功能处理","python","java","功能","sql","js","html","css","取消"])
     record_insert_sql = "INSERT INTO code_query  (label,content) VALUES ('AAAA','BBBB')"
     if str(result).find("取消") > -1:
+        return None
+    if str(result).find("功能处理") > -1:
+        #pyautogui.hotkey('ctrl','c')
+        sentence =  pyperclip.paste()
+        # if sentence != copyContent:
+        actionFalg = False
+        root.attributes("-alpha", 1)
+        root.overrideredirect(True)
+        root.geometry("+"+str(mouseX)+"+"+str(int(mouseY)+20))
+
+
         return None
     saveMysql(record_insert_sql.replace("AAAA",result.replace("\\", "\\\\").replace("'","\\'")).replace("BBBB",str(sentence).replace("\\", "\\\\").replace("'","\\'")))
     pyautogui.alert(text='录入成功',title='',button='OK') 
@@ -243,8 +255,9 @@ def listbox_update(data):
 
 
 def on_select(event):
-    global label
+    global label,actionFalg,clickFlag
     #这里点击则展示全部的信息
+    clickFlag = False
     content = ""
     try:
         content = str(event.widget.get(event.widget.curselection()))
@@ -258,9 +271,14 @@ def on_select(event):
         root.attributes("-alpha", 0)
         # pyautogui.hotkey('ctrl', 'c')
         #获取粘贴板内容
+        if  content == "取消":
+            actionFalg = True
+            return False
         sentence =  pyperclip.paste()
         #独立的功能区域
         functional_area(content,sentence)
+        #这里为了实现功能后，还能继续使用
+        actionFalg = True
         # if content == "翻译":
         #     print("进入翻译了---"+sentence)
         # elif content == "格式化Json":
@@ -269,6 +287,7 @@ def on_select(event):
         code_query_update_sql = "UPDATE code_query SET count  = count + 1 WHERE content = 'BBBB'"
         saveMysql(code_query_update_sql.replace("BBBB",content.replace("\\", "\\\\").replace("'","\\'")))
     else:
+        root.geometry("+1500+100")
         content =",".join(content.split(",")[1:])
         #这边可以拓展一系列功能
         # print("!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -370,14 +389,14 @@ def word_count_in_str(string, keyword):
 
 # 监听按压
 def on_press(key):
-    global strList,replaced_string,replaced_string1,firstBu,test_list,label
+    global strList,replaced_string,replaced_string1,firstBu,test_list,label,keyAction,clickFlag
+    # keyAction = True
     keyValue = ""
     try:
         keyValue = key.char
     except Exception as e:
         keyValue = str(key)
     if label != "功能":
-        
         # print(keyValue,firstBu)
         if keyValue not in ["Key.space","Key.enter","Key.ctrl_l","Key.right","Key.shift_r","Key.shift","Key.alt_l"]:
             if keyValue not in ["1","2","3","4","5","6","7","8","9","0"] :
@@ -428,6 +447,15 @@ def on_press(key):
         else:
             firstBu = keyValue
     else:
+        print("这里是啥子"+keyValue)
+        # 不晓得为啥多了个C
+        if firstBu == "Key.ctrl_l" and keyValue == "c" or firstBu == "c" and keyValue == "Key.ctrl_l" or firstBu == None:
+            pass
+        else:
+            if keyAction == False:
+                root.attributes("-alpha", 0)
+        if firstBu == "Key.ctrl_l" and keyValue == "v" or firstBu == "v" and keyValue == "Key.ctrl_l":
+            clickFlag = False
         if  firstBu == "Key.ctrl_l" and keyValue == "q" or firstBu == "q" and keyValue == "Key.ctrl_l":
             pyautogui.hotkey('ctrl', 'c')
             sentence =  pyperclip.paste()
@@ -466,8 +494,15 @@ mouseY = 0
 #执行判断
 actionFalg = True
 
+#判断拷贝内容是否修改了
+copyContent = None
+#加一个键盘判断，如果有任何的键盘操作，则都无法进入鼠标的操作
+keyAction = False
+#处理标识,如果经过了处理就修改标识，否则，不复制
+clickFlag = False
+
 def mouse_click(x, y, button, pressed):
-    global last_time
+    global last_time,copyContent,keyAction,clickFlag
     # print("简历了")
     global shoot
     global scope
@@ -483,20 +518,49 @@ def mouse_click(x, y, button, pressed):
             shoot = 1
     # print(pressed)
     if pressed == False:
+        root.attributes("-alpha", 0)
+        actionFalg = True
         continueTime = last_time
         last_time = 0
-        if label == "功能" and continueTime > 5  :
+        print(button)
+        if label == "功能" and continueTime > 5  and button != Button.right :
+            print("进来了")
             #当复制一次的时候没有操作，证明不需要
             if actionFalg ==False:
                 actionFalg = True
                 root.attributes("-alpha", 0)
+                print("进来了1")
             else:
-                actionFalg = False
-                root.attributes("-alpha", 1)
-                root.overrideredirect(True)
-                root.geometry("+"+str(mouseX)+"+"+str(int(mouseY)+20))
-                # root.attributes("-alpha",0.5)
-                pyautogui.hotkey('ctrl','c')
+                sentence =  pyperclip.paste()
+                if sentence != copyContent or True:
+                    print("进来了2")
+                    copyContent = sentence
+                    actionFalg = False
+                    root.attributes("-alpha", 1)
+                    root.overrideredirect(True)
+                    root.geometry("+"+str(mouseX)+"+"+str(int(mouseY)+20))
+                    keyAction = True
+                    if clickFlag == False:
+                        pyautogui.hotkey('ctrl','c')
+                    clickFlag = True
+                    keyAction = False
+                else:
+                    print("进来了3")
+                    pyautogui.hotkey('ctrl','c')
+                    sentence =  pyperclip.paste()
+                    if sentence != copyContent:
+                        copyContent = sentence
+                        actionFalg = False
+                        root.attributes("-alpha", 1)
+                        root.overrideredirect(True)
+                        root.geometry("+"+str(mouseX)+"+"+str(int(mouseY)+20))
+
+
+
+
+                # else:
+
+                    
         # sentence =  pyperclip.paste()
         # print("现在的值---"+str(sentence)
     if not pressed and button == Button.left:
@@ -527,8 +591,12 @@ t1.start()
 
 #这里是功能大集合
 def  functional_area(content,sentence):
-    tools.uncommon_Function_Complete(content,"",sentence)
-    root.geometry("+1500+100")
+    try:
+        tools.uncommon_Function_Complete(content,"",sentence)
+    except Exception as e:
+        print(e)
+    
+    root.geometry("+1800+100")
 
 listbox = tk.Listbox(root,height=15,width=23)
 listbox.pack()
