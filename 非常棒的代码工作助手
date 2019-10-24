@@ -15,6 +15,7 @@ import win32gui
 import pymysql
 import time
 import easygui as g
+import tools
 
 lastSentence = None
 #这里记录字符的连续长度
@@ -254,13 +255,16 @@ def on_select(event):
     if label == "功能":
         # 模拟快捷键，热键
         print("进入功能区")
+        root.attributes("-alpha", 0)
         # pyautogui.hotkey('ctrl', 'c')
         #获取粘贴板内容
         sentence =  pyperclip.paste()
-        if content == "翻译":
-            print("进入翻译了---"+sentence)
-        elif content == "格式化Json":
-            pass
+        #独立的功能区域
+        functional_area(content,sentence)
+        # if content == "翻译":
+        #     print("进入翻译了---"+sentence)
+        # elif content == "格式化Json":
+        #     pass
 
         code_query_update_sql = "UPDATE code_query SET count  = count + 1 WHERE content = 'BBBB'"
         saveMysql(code_query_update_sql.replace("BBBB",content.replace("\\", "\\\\").replace("'","\\'")))
@@ -459,12 +463,16 @@ last_time = 0
 mouseX = 0
 mouseY = 0
 
+#执行判断
+actionFalg = True
+
 def mouse_click(x, y, button, pressed):
     global last_time
     # print("简历了")
     global shoot
     global scope
     global label
+    global actionFalg
     if pressed:
         # 点击右键
         if button == Button.right:
@@ -477,14 +485,18 @@ def mouse_click(x, y, button, pressed):
     if pressed == False:
         continueTime = last_time
         last_time = 0
-        if label == "功能" and continueTime > 5:
-            # print("进来了")
-        # sentence =  pyperclip.paste()
-        # print("原来的值为---"+str(sentence))
-            root.overrideredirect(True)
-            root.geometry("+"+str(mouseX)+"+"+str(int(mouseY)+20))
-            # root.attributes("-alpha",0.5)
-            pyautogui.hotkey('ctrl','c')
+        if label == "功能" and continueTime > 5  :
+            #当复制一次的时候没有操作，证明不需要
+            if actionFalg ==False:
+                actionFalg = True
+                root.attributes("-alpha", 0)
+            else:
+                actionFalg = False
+                root.attributes("-alpha", 1)
+                root.overrideredirect(True)
+                root.geometry("+"+str(mouseX)+"+"+str(int(mouseY)+20))
+                # root.attributes("-alpha",0.5)
+                pyautogui.hotkey('ctrl','c')
         # sentence =  pyperclip.paste()
         # print("现在的值---"+str(sentence)
     if not pressed and button == Button.left:
@@ -513,6 +525,11 @@ t.start()
 t1= threading.Thread(target = mouseListener)
 t1.start()
 
+#这里是功能大集合
+def  functional_area(content,sentence):
+    tools.uncommon_Function_Complete(content,"",sentence)
+    root.geometry("+1500+100")
+
 listbox = tk.Listbox(root,height=15,width=23)
 listbox.pack()
 #listbox.bind('<Double-Button-1>', on_select)
@@ -524,5 +541,6 @@ if listD != None and listD != []:
         listbox.insert('end', obj)
 # listbox_update(listbox_update(intelligent_Tips("","功能")))
 root.geometry("+1500+100")
+root.attributes("-alpha", 0)
 root.wm_attributes('-topmost',1)
 root.mainloop()
