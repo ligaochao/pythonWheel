@@ -243,6 +243,28 @@ def on_keyrelease(sentence):
     listbox_update(data)
 
 
+def on_keySpace(sentence):
+    global copyList,fileUrlOld,test_list,realS,label
+    test_list = test_list + intelligent_Tips(sentence,label)
+    copyList1 = []
+    value = sentence
+    if value == '':
+        data = test_list
+        copyList1 = test_list
+    else:
+        data = []
+        index = 1 #
+        for item in test_list:#get3
+            # print(value)
+            if item.lower().find(value.lower())>-1 :
+                # print(str(index)+"---"+str(item.lower()))
+                data.append(str(index)+","+item)
+                copyList1.append(item)
+                index = index + 1
+    copyList = copyList1             
+    listbox_update(data)
+
+
 def listbox_update(data):
     # delete previous data
     listbox.delete(0, 'end')
@@ -252,6 +274,9 @@ def listbox_update(data):
     if data != None and data != []:
         for item in data:
             listbox.insert('end', item)
+    else:
+        listbox.insert('end', "查询结果为空")
+
 
 
 def on_select(event):
@@ -289,6 +314,7 @@ def on_select(event):
     else:
         root.geometry("+1500+100")
         content =",".join(content.split(",")[1:])
+        print(content)
         #这边可以拓展一系列功能
         # print("!!!!!!!!!!!!!!!!!!!!!!!!!")
         # result1 = pyautogui.confirm(text=content,title='功能处理',buttons=["复制","翻译","查询"])
@@ -351,18 +377,30 @@ def fun_timer(obj,flag):
     if flag == "2":
         sentence = "".join(strList[len(strList)-2*int(obj):len(strList)-int(obj)])
         lastSentence = None
-        # print("字符串是"+str(strList))
-        # print("实际的字符串是"+str(sentence))
         if lastSentence != sentence:
             lastSentence = sentence
             on_keyrelease(sentence)
 
+
+
 def go(*args):   #处理事件，*args表示可变参数
-    global label
+    global label,realS
     label = str(comboxlist.get()).strip()
     if label == "功能":
         listbox_update(intelligent_Tips("",label))
     if label != "功能":
+        if realS != None:
+            # try:
+            print("真实值是"+str(realS))
+            queryList = intelligent_Tips(realS,label)
+            newList = []
+            index = 1 
+            for obj in queryList:
+                newList.append(str(index)+","+obj)
+            print("查询的结果为"+str(queryList))
+            listbox_update(newList)
+            # except Exception as e:
+            #     print(e) 
         root.overrideredirect(False)
         root.geometry("+1500+100")
 
@@ -389,7 +427,7 @@ def word_count_in_str(string, keyword):
 
 # 监听按压
 def on_press(key):
-    global strList,replaced_string,replaced_string1,firstBu,test_list,label,keyAction,clickFlag
+    global strList,replaced_string,replaced_string1,firstBu,test_list,label,keyAction,clickFlag,realS
     # keyAction = True
     keyValue = ""
     try:
@@ -429,16 +467,16 @@ def on_press(key):
                     replaced_string1 = "；"*int(result)
         if firstBu == "Key.shift_r" and keyValue in ["1","2","3","4","5","6","7","8","9","0"]:
             pass
-        elif firstBu == "Key.ctrl_l" and keyValue == "c" or firstBu == "c" and keyValue == "Key.ctrl_l":
-            # pyautogui.hotkey('ctrl', 'c')
-            time.sleep(1)
-            sentence =  pyperclip.paste()
-            print("拷贝的内容是---"+sentence)
-            test_list = []
-            firstBu = None
-            keyValue = None
-            # print("进来这个分支了--"+str(sentence))
-            on_copy(sentence)
+        # elif firstBu == "Key.ctrl_l" and keyValue == "c" or firstBu == "c" and keyValue == "Key.ctrl_l":
+        #     # pyautogui.hotkey('ctrl', 'c')
+        #     time.sleep(1)
+        #     sentence =  pyperclip.paste()
+        #     #print("拷贝的内容是---"+sentence)
+        #     test_list = []
+        #     firstBu = None
+        #     keyValue = None
+        #     # print("进来这个分支了--"+str(sentence))
+        #     on_copy(sentence)
         elif firstBu == "Key.ctrl_l" and keyValue == "q" or firstBu == "q" and keyValue == "Key.ctrl_l":
             pyautogui.hotkey('ctrl', 'c')
             sentence =  pyperclip.paste()
@@ -447,19 +485,26 @@ def on_press(key):
         else:
             firstBu = keyValue
     else:
-        print("这里是啥子"+keyValue)
+        print("这里是啥子"+keyValue) 
         # 不晓得为啥多了个C
-        if firstBu == "Key.ctrl_l" and keyValue == "c" or firstBu == "c" and keyValue == "Key.ctrl_l" or firstBu == None:
-            pass
-        else:
-            if keyAction == False:
-                root.attributes("-alpha", 0)
+        if firstBu == "Key.ctrl_l" and keyValue == "Key.space" or firstBu == "Key.space" and keyValue == "Key.ctrl_l":
+            print("进入space功能")
+            firstBu = None
+            keyValue = None
+            pyautogui.hotkey('ctrl', 'c')
+            sentence =  pyperclip.paste()
+            realS = sentence
+            on_keySpace(sentence)
+            root.attributes("-alpha", 1)
         if firstBu == "Key.ctrl_l" and keyValue == "v" or firstBu == "v" and keyValue == "Key.ctrl_l":
             clickFlag = False
         if  firstBu == "Key.ctrl_l" and keyValue == "q" or firstBu == "q" and keyValue == "Key.ctrl_l":
+            firstBu = None
+            keyValue = None
             pyautogui.hotkey('ctrl', 'c')
             sentence =  pyperclip.paste()
             on_save(sentence)
+            
         else:
             firstBu = keyValue
 
@@ -500,15 +545,19 @@ copyContent = None
 keyAction = False
 #处理标识,如果经过了处理就修改标识，否则，不复制
 clickFlag = False
-
+#这里新增一个标识，来标记用户鼠标左键的状态
+leftStatus = False
+#鼠标持续时间
+continueClickTime = 0
 def mouse_click(x, y, button, pressed):
-    global last_time,copyContent,keyAction,clickFlag
+    global last_time,copyContent,keyAction,clickFlag,leftStatus,continueClickTime
     # print("简历了")
     global shoot
     global scope
     global label
     global actionFalg
     if pressed:
+        leftStatus = True
         # 点击右键
         if button == Button.right:
             scope = 0
@@ -518,22 +567,21 @@ def mouse_click(x, y, button, pressed):
             shoot = 1
     # print(pressed)
     if pressed == False:
-        root.attributes("-alpha", 0)
+        leftStatus = False
+        # root.attributes("-alpha", 0)
         actionFalg = True
         continueTime = last_time
         last_time = 0
         print(button)
-        if label == "功能" and continueTime > 5  and button != Button.right :
-            print("进来了")
+        if label == "功能" and continueTime > 5  and button != Button.right and continueClickTime >=1:
+            print("进来了"+str(continueClickTime))
             #当复制一次的时候没有操作，证明不需要
             if actionFalg ==False:
                 actionFalg = True
                 root.attributes("-alpha", 0)
-                print("进来了1")
             else:
                 sentence =  pyperclip.paste()
-                if sentence != copyContent or True:
-                    print("进来了2")
+                if sentence != copyContent:
                     copyContent = sentence
                     actionFalg = False
                     root.attributes("-alpha", 1)
@@ -545,7 +593,7 @@ def mouse_click(x, y, button, pressed):
                     clickFlag = True
                     keyAction = False
                 else:
-                    print("进来了3")
+                    # print("进来了3")
                     pyautogui.hotkey('ctrl','c')
                     sentence =  pyperclip.paste()
                     if sentence != copyContent:
@@ -554,15 +602,6 @@ def mouse_click(x, y, button, pressed):
                         root.attributes("-alpha", 1)
                         root.overrideredirect(True)
                         root.geometry("+"+str(mouseX)+"+"+str(int(mouseY)+20))
-
-
-
-
-                # else:
-
-                    
-        # sentence =  pyperclip.paste()
-        # print("现在的值---"+str(sentence)
     if not pressed and button == Button.left:
         shoot = 0
 
@@ -571,9 +610,7 @@ def on_move(x, y):
     mouseX = x
     mouseY = y
     last_time = last_time + 1
-    # print(last_time)
-    # 监听鼠标移动
-    # print('Pointer moved to {0}'.format((x, y)))
+
 
 
 """
@@ -589,6 +626,32 @@ t.start()
 t1= threading.Thread(target = mouseListener)
 t1.start()
 
+oldMouseX = None
+oldMouseY = None
+
+
+#这里主要用来监视复制停留时间
+def  clickTime():
+    global mouseX,mouseY,leftStatus,continueClickTime,oldMouseX,oldMouseY
+    while True:
+        time.sleep(0.5)
+        if leftStatus:
+            print("进来了")
+            if oldMouseX == mouseX and oldMouseY == mouseY:
+                continueClickTime = continueClickTime + 1
+                print("时间为多少"+str(continueClickTime))
+            else:
+                oldMouseX = mouseX
+                oldMouseY = mouseY
+                continueClickTime = 0
+        else:
+            continueClickTime = 0
+
+
+
+#新启动一个线程，监控按压时长，当时间超过1秒的时候，认为
+t2 = threading.Thread(target = clickTime)
+t2.start()
 #这里是功能大集合
 def  functional_area(content,sentence):
     try:
