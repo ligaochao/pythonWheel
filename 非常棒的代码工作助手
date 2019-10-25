@@ -168,24 +168,25 @@ def on_copy(sentence):
 
 
 def on_save(sentence):
-    global actionFalg
+    global actionFalg,realS
     result = pyautogui.confirm(text=str(sentence)[0:300],title='保存到代码库',buttons=["功能处理","python","java","功能","sql","js","html","css","取消"])
     record_insert_sql = "INSERT INTO code_query  (label,content) VALUES ('AAAA','BBBB')"
     if str(result).find("取消") > -1:
         return None
     if str(result).find("功能处理") > -1:
-        #pyautogui.hotkey('ctrl','c')
-        sentence =  pyperclip.paste()
+        # pyautogui.hotkey('ctrl','c')
+        # sentence =  pyperclip.paste()
+        realS = sentence
         # if sentence != copyContent:
         actionFalg = False
         root.attributes("-alpha", 1)
         root.overrideredirect(True)
         root.geometry("+"+str(mouseX)+"+"+str(int(mouseY)+20))
-
-
         return None
-    saveMysql(record_insert_sql.replace("AAAA",result.replace("\\", "\\\\").replace("'","\\'")).replace("BBBB",str(sentence).replace("\\", "\\\\").replace("'","\\'")))
-    pyautogui.alert(text='录入成功',title='',button='OK') 
+    # print("实际的result"+str(result))
+    if result != None:
+        saveMysql(record_insert_sql.replace("AAAA",result.replace("\\", "\\\\").replace("'","\\'")).replace("BBBB",str(sentence).replace("\\", "\\\\").replace("'","\\'")))
+        pyautogui.alert(text='录入成功',title='',button='OK') 
 def on_keyrelease(sentence):
     global copyList,fileUrlOld,test_list,realS,label
     copyList1 = []
