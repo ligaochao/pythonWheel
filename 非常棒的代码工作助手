@@ -574,34 +574,35 @@ def mouse_click(x, y, button, pressed):
         last_time = 0
         print(button)
         if label == "功能" and continueTime > 5  and button != Button.right and continueClickTime >=1:
-            print("进来了"+str(continueClickTime))
-            #当复制一次的时候没有操作，证明不需要
-            if actionFalg ==False:
-                actionFalg = True
-                root.attributes("-alpha", 0)
-            else:
-                sentence =  pyperclip.paste()
-                if sentence != copyContent:
-                    copyContent = sentence
-                    actionFalg = False
-                    root.attributes("-alpha", 1)
-                    root.overrideredirect(True)
-                    root.geometry("+"+str(mouseX)+"+"+str(int(mouseY)+20))
-                    keyAction = True
-                    if clickFlag == False:
-                        pyautogui.hotkey('ctrl','c')
-                    clickFlag = True
-                    keyAction = False
-                else:
-                    # print("进来了3")
-                    pyautogui.hotkey('ctrl','c')
-                    sentence =  pyperclip.paste()
-                    if sentence != copyContent:
-                        copyContent = sentence
-                        actionFalg = False
-                        root.attributes("-alpha", 1)
-                        root.overrideredirect(True)
-                        root.geometry("+"+str(mouseX)+"+"+str(int(mouseY)+20))
+            pass
+            # print("进来了"+str(continueClickTime))
+            # #当复制一次的时候没有操作，证明不需要
+            # if actionFalg ==False:
+            #     actionFalg = True
+            #     root.attributes("-alpha", 0)
+            # else:
+            #     sentence =  pyperclip.paste()
+            #     if sentence != copyContent:
+            #         copyContent = sentence
+            #         actionFalg = False
+            #         root.attributes("-alpha", 1)
+            #         root.overrideredirect(True)
+            #         root.geometry("+"+str(mouseX)+"+"+str(int(mouseY)+20))
+            #         keyAction = True
+            #         if clickFlag == False:
+            #             pyautogui.hotkey('ctrl','c')
+            #         clickFlag = True
+            #         keyAction = False
+            #     else:
+            #         # print("进来了3")
+            #         pyautogui.hotkey('ctrl','c')
+            #         sentence =  pyperclip.paste()
+            #         if sentence != copyContent:
+            #             copyContent = sentence
+            #             actionFalg = False
+            #             root.attributes("-alpha", 1)
+            #             root.overrideredirect(True)
+            #             root.geometry("+"+str(mouseX)+"+"+str(int(mouseY)+20))
     if not pressed and button == Button.left:
         shoot = 0
 
@@ -632,14 +633,19 @@ oldMouseY = None
 
 #这里主要用来监视复制停留时间
 def  clickTime():
-    global mouseX,mouseY,leftStatus,continueClickTime,oldMouseX,oldMouseY
+    global mouseX,mouseY,leftStatus,continueClickTime,oldMouseX,oldMouseY,label
     while True:
         time.sleep(0.5)
         if leftStatus:
-            print("进来了")
+            # print("进来了")
             if oldMouseX == mouseX and oldMouseY == mouseY:
                 continueClickTime = continueClickTime + 1
-                print("时间为多少"+str(continueClickTime))
+                continueTime = last_time
+                if label == "功能" and continueTime > 5  and continueClickTime >=1:
+                    root.attributes("-alpha", 1)
+                    root.overrideredirect(True)
+                    root.geometry("+"+str(mouseX)+"+"+str(int(mouseY)+20))
+                    pyautogui.hotkey('ctrl','c')
             else:
                 oldMouseX = mouseX
                 oldMouseY = mouseY
