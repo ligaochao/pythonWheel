@@ -1,0 +1,318 @@
+# 视图层
+from tkinter import *
+import tkinter  
+import os
+import tkinter.filedialog
+from os import path
+import windnd
+import json
+from jinja2 import Environment, FileSystemLoader
+import pyperclip
+import pyautogui
+import pandas as pd
+from tkinter.filedialog import askdirectory
+
+
+
+root = Tk()
+root.title('模板生成工具')
+txt = tkinter.Text(root,height = 20,width=20)
+"""
+功能：获取某字符串两子字符串之间的内容
+作者:李高超
+创建日期：2018-07-05 17:22:24
+入参：
+  pendingString：原始字符串
+  startCharacter：开始子字符串
+  endCharacter：结束子字符串
+出参：子字符串之间的内容
+"""
+def  getTheContentBetweenTwoCharacters(pendingString, startCharacter, endCharacter):
+	targetString = ''
+	startPosition = pendingString.find(startCharacter)
+	endPosition = pendingString.find(endCharacter)
+	if startPosition >-1 and endPosition >-1 and startPosition < endPosition:
+		targetString = pendingString[startPosition+1:endPosition]
+	return targetString
+
+
+
+def open1():
+    filename = tkinter.filedialog.askopenfilename()
+    if filename != '':
+        print(filename)
+        e_keyword.delete(0,END)
+        e_keyword.insert(0,filename)
+    else:
+        print('no')
+
+
+def open2():
+    filename = tkinter.filedialog.askopenfilename()
+    if filename != '':
+        print(filename)
+        e_keyword1.delete(0,END)
+        e_keyword1.insert(0,filename)
+    else:
+        print('no')
+
+def open3():
+    # filename = tkinter.filedialog.askopenfilename()
+    path_ = askdirectory()
+    filename = path_ 
+    if filename != '':
+        print(filename)
+        e_keyword2.delete(0,END)
+        e_keyword2.insert(0,filename)
+    else:
+        print('no')
+
+#处理excel数据源
+def get_by_excel(fileUrlData):
+	df = pd.DataFrame(pd.read_excel(fileUrlData))
+	da = df.to_dict(orient='records')
+	return da
+
+#处理csv数据源
+def get_by_csv(fileUrlData):
+	print(fileUrlData)
+	df = pd.read_csv(open(fileUrlData))
+	da = df.to_dict(orient='records')
+	return da
+
+"""
+方法，下划线转小写
+"""
+def underline_to_low(strD):
+    strResult = ""
+    try:
+	    if strD != "" and strD.find('_')>-1:
+	        strdList = strD.split("_")
+	        for obj in strdList:
+	            if obj != "":
+	                if len(obj) > 1:
+	                    strResult = strResult + obj[0].title()+obj[1:]
+	                else:
+	                    strResult = strResult + obj[0].title()
+	        strResult = strResult[0].lower()+strResult[1:]
+	    elif len(strD) > 1 and strD.find('_')  == -1:
+	        strResult = strD[0].lower()+strD[1:]
+	    elif len(strD) == 1 and strD.find('_')  == -1:
+	        strResult = strD[0].lower()
+	    else:
+	        return strD
+    except Exception as e:
+    	return strD
+
+    return  strResult
+
+def mysqlToJavaType(mysqlType):
+    if mysqlType == "varchar":
+        return "String"
+    elif mysqlType == "int":
+        return "Integer"
+    elif mysqlType == "decimal":
+        return "BigDecimal"
+    elif mysqlType == "datetime":
+        return "Date"
+    else:
+        return mysqlType
+
+
+
+def  getSql(modelFile,dataFile,createFile):
+	#这里获取模板文件信息
+	fileUrl = modelFile
+	fileCatalog = "/".join(fileUrl.split("/")[0:len(fileUrl.split("/"))-1])
+	#这里获取数据文件信息
+	fileUrlData = dataFile
+	print("模板一是："+str(fileUrlData))
+	fileCatalog1 = "/".join(fileUrlData.split("/")[0:len(fileUrlData.split("/"))-1])
+	print("模板一是1："+str(fileCatalog1))
+	#获取文件后缀名
+	file_suffix_list = fileUrlData.replace(fileCatalog1,"").replace("/","").split(".")
+	file_suffix = file_suffix_list[len(file_suffix_list)-1]
+	#这个是循环变量数组
+	propertys = []
+	#这个是自定义变量数组
+	variables = {}
+	# print("后缀名为"+file_suffix)
+	if file_suffix == "xlsx" or file_suffix == "XLSX":
+		print("进入excel处理流程")
+		propertys = get_by_excel(fileUrlData)
+		print("excel完成")
+	if file_suffix == "csv":
+		print("进入csv处理流程")
+		propertys = get_by_csv(fileUrlData)
+		print("csv完成")
+
+	#这里再新增一些特殊的方法处理，为每一个变量新增一些转换方法
+	newList = []
+	for obj in propertys:
+		arr = obj.keys()
+		objNew = {}
+		for obj1 in arr:
+			#这个保存的是原来的值
+			objNew[str(obj1)] = obj.get(obj1)
+			#获取驼峰数据结构
+			objNew[str(obj1)+"_Tohump"] = underline_to_low(obj.get(obj1))
+			#获取java类型
+			objNew[str(obj1)+"_ToJavaType"] = mysqlToJavaType(obj.get(obj1))
+
+		newList.append(objNew)
+	propertys =  newList
+	# print(fileUrl,fileCatalog)
+	strJson = str(txt.get(0.,"end"))
+	# if file_suffix == "xlsx" 
+	file_separator = None
+	try:
+		variable_information = json.loads(strJson)
+		#获取文件内容的分割符（如果是excel或者sql的话，则不需要指定）
+		file_separator = variable_information['separator']
+		if file_separator != None and file_separator !="None":
+			print("文件分割符"+file_separator)
+		# additional_information = None
+		variables = additional_information
+	except Exception as e:
+		pass
+	# fileName = fileUrlData.replace(fileCatalog1,"").replace("/","").replace("."+file_suffix,"")
+	fileName = ".".join(file_suffix_list[0:len(file_suffix_list)-1])
+	#这里可能存在风险，一般不会有
+	modelFileName = modelFile.split("/")[len(modelFile.split("/"))-1].split(".")[0]
+	index = 0
+	print(variables)
+	# print("-----"+str(fileName.split("--")))
+	for obj in fileName.split("--"):
+		print(obj)
+		if obj != None:
+			variables["_"+str(index)] = str(obj)
+		index = index + 1
+
+
+	#这里模板加载位置
+	print("模板是:"+str(fileUrl.replace(fileCatalog,"").replace("/","")))
+	env = Environment(loader = FileSystemLoader(fileCatalog))
+	template = env.get_template(fileUrl.replace(fileCatalog,"").replace("/",""))
+	content = template.render(lv= propertys,ov = variables)
+	if createFile != None and createFile.find("/") > -1:
+		with open(createFile+"/"+fileName.split("--")[0]+"=="+modelFileName,"w",encoding = "utf-8") as f:
+			f.write(content)
+	else:
+		#写入粘贴板
+		pyperclip.copy(content)
+		#提示框，弹出框
+		pyautogui.alert(text='处理成功，ctrl+v获取结果',title='',button='OK') 
+
+
+# 对文件的操作
+def func(ls):
+    e_keyword.delete(0,END)
+    for i in ls:
+        e_keyword.insert("end",i.decode("gbk")+'\n')
+
+def func1(ls):
+    e_keyword1.delete(0,END)
+    for i in ls:
+        e_keyword1.insert("end",i.decode("gbk")+'\n')
+
+
+def listdir(path,list_name):  #传入存储的list
+    for file in os.listdir(path):
+        file_path = os.path.join(path, file)  
+        if os.path.isdir(file_path):  
+            listdir(file_path, list_name)  
+        else:
+            list_name.append(os.path.basename(file_path))
+
+# print(listdir("C:\\Users\\ligc\\Desktop\\脚本\\个人脚本\\个人脚本大整理\\兴趣\\小工具集合", strd))
+# print(strd)
+
+
+def main():
+ 	modelFile = str(e_keyword1.get()).strip().replace("\\","/")
+ 	dataFile = str(e_keyword.get()).strip().replace("\\","/")
+ 	createFile = str(e_keyword2.get()).strip().replace("\\","/")
+ 	if createFile.find("/") == -1 and createFile.find("\\") == -1:
+ 		getSql(modelFile,dataFile,None)
+ 	else:
+ 		modelCatalog = "/".join(modelFile.split("/")[0:len(modelFile.split("/"))-1])
+ 		modelList = []
+ 		listdir(modelCatalog, modelList)
+ 		dataCatalog = "/".join(dataFile.split("/")[0:len(dataFile.split("/"))-1])
+ 		dataList = []
+ 		listdir(dataCatalog, dataList)
+ 		for obj in dataList:
+ 			for obj1 in modelList:
+ 				print(obj,obj1,createFile)
+ 				getSql(modelFile,dataFile,createFile)
+ 		os.startfile(createFile)
+
+
+		
+
+
+root.geometry("300x400")
+root.resizable(width=True, height=True)
+l_result =Label(root,text='数据文件')
+l_result.grid(row=1,sticky=W)
+e_keyword =Entry(root,width = 20)
+e_keyword.grid(row=1,column=1,sticky=E)
+# 第二行，密码标签及输入框
+b_login2 = Button(root,text='查找',command=open1)
+b_login2.grid(row=1,column=2)
+
+
+
+l_result1 =Label(root,text='模板文件')
+l_result1.grid(row=2,sticky=W)
+e_keyword1 =Entry(root,width = 20)
+e_keyword1.grid(row=2,column=1,sticky=E)
+# 第二行，密码标签及输入框
+b_login3 = Button(root,text='查找',command=open2)
+b_login3.grid(row=2,column=2)
+
+
+
+l_result2 =Label(root,text='输出文件夹')
+l_result2.grid(row=3,sticky=W)
+e_keyword2 =Entry(root,width = 20)
+e_keyword2.grid(row=3,column=1,sticky=E)
+# 第二行，密码标签及输入框
+b_login4 = Button(root,text='查找',command=open3)
+b_login4.grid(row=3,column=2)
+
+l_result =Label(root,text='变量定义区')
+l_result.grid(row=4,sticky=W)
+
+txt_default_value = ''' 
+{
+ "separator":",",
+ "自定义键":"自定义值"
+}
+'''
+txt.insert(0.,txt_default_value)
+txt.grid(row=4,column=1)
+b_login3 = Button(root,text='生成结果',command=main)
+b_login3.grid(row=5,column=1)
+
+windnd.hook_dropfiles(e_keyword.winfo_id(),func)
+windnd.hook_dropfiles(e_keyword1.winfo_id(),func1)	
+root.wm_attributes('-topmost',1)
+ 
+root.mainloop()
+
+
+
+
+
+# from jinja2 import Environment, FileSystemLoader
+
+# env = Environment(loader = FileSystemLoader("./templates"))
+# template = env.get_template("test.txt")  
+# propertys = []
+# objD = {"name":"123"}
+# propertys.append(objD)
+# content = template.render(propertys = propertys)
+
+# with open('./test.conf','w') as fp:
+# 	fp.write(content)
