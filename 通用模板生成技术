@@ -1,4 +1,3 @@
-# 视图层
 from tkinter import *
 import tkinter  
 import os
@@ -106,17 +105,31 @@ def underline_to_low(strD):
 
     return  strResult
 
+
+#取字符串中两个符号之间的东东
+def txt_wrap_by(start_str, end, html):
+	start = html.find(start_str)
+	if start >= 0:
+	    start += len(start_str)
+	    end = html.find(end, start)
+	    if end >= 0:
+	        return html[start:end].strip()
+
+#去掉两个字符之间的数据
 def mysqlToJavaType(mysqlType):
-    if mysqlType == "varchar":
-        return "String"
-    elif mysqlType == "int":
-        return "Integer"
-    elif mysqlType == "decimal":
-        return "BigDecimal"
-    elif mysqlType == "datetime":
-        return "Date"
-    else:
-        return mysqlType
+	if mysqlType != None:
+		mysqlType = str(mysqlType).replace("（","(").replace("）",")")
+		mysqlType = mysqlType.replace(txt_wrap_by('(',')',mysqlType),"").replace("(","").replace(")","").strip()
+	if mysqlType == "varchar":
+	    return "String"
+	elif mysqlType == "int":
+	    return "Integer"
+	elif mysqlType == "decimal":
+	    return "BigDecimal"
+	elif mysqlType == "datetime":
+	    return "Date"
+	else:
+	    return mysqlType
 
 
 
@@ -152,14 +165,20 @@ def  getSql(modelFile,dataFile,createFile):
 		arr = obj.keys()
 		objNew = {}
 		for obj1 in arr:
+			# print(obj.get(obj1))
+			if str(obj.get(obj1)).strip() != "nan":
 			#这个保存的是原来的值
-			objNew[str(obj1)] = obj.get(obj1)
-			#获取驼峰数据结构
-			objNew[str(obj1)+"_Tohump"] = underline_to_low(obj.get(obj1))
-			#获取java类型
-			objNew[str(obj1)+"_ToJavaType"] = mysqlToJavaType(obj.get(obj1))
+				objNew[str(obj1)] = obj.get(obj1)
+			else:
+				print("111111")
+				objNew[str(obj1)] = ""
+			# #获取驼峰数据结构
+			# objNew[str(obj1)+"_Tohump"] = underline_to_low(obj.get(obj1))
+			# #获取java类型
+			# objNew[str(obj1)+"_ToJavaType"] = mysqlToJavaType(obj.get(obj1))
 
 		newList.append(objNew)
+	print(newList)
 	propertys =  newList
 	# print(fileUrl,fileCatalog)
 	strJson = str(txt.get(0.,"end"))
@@ -191,8 +210,14 @@ def  getSql(modelFile,dataFile,createFile):
 
 	#这里模板加载位置
 	print("模板是:"+str(fileUrl.replace(fileCatalog,"").replace("/","")))
+	#这里新增各类过滤器
+	#1,获取驼峰数据结构
 	env = Environment(loader = FileSystemLoader(fileCatalog))
+	env.filters['Tohump'] = underline_to_low
+	env.filters['ToJavaType'] = mysqlToJavaType
 	template = env.get_template(fileUrl.replace(fileCatalog,"").replace("/",""))
+	print(propertys)
+
 	content = template.render(lv= propertys,ov = variables)
 	if createFile != None and createFile.find("/") > -1:
 		with open(createFile+"/"+fileName.split("--")[0]+"=="+modelFileName,"w",encoding = "utf-8") as f:
@@ -230,14 +255,24 @@ def listdir(path,list_name):  #传入存储的list
 
 def main():
  	modelFile = str(e_keyword1.get()).strip().replace("\\","/")
+ 	print(modelFile)
+ 	if modelFile.find("{{")  != -1 :
+ 		with open("D:\\jinjia\\test.txt","w",encoding = "utf-8") as f:
+ 			f.write(modelFile)
+ 		modelFile = "D:/jinjia/test.txt"
  	dataFile = str(e_keyword.get()).strip().replace("\\","/")
  	createFile = str(e_keyword2.get()).strip().replace("\\","/")
  	if createFile.find("/") == -1 and createFile.find("\\") == -1:
  		getSql(modelFile,dataFile,None)
  	else:
- 		modelCatalog = "/".join(modelFile.split("/")[0:len(modelFile.split("/"))-1])
  		modelList = []
- 		listdir(modelCatalog, modelList)
+ 		try:
+ 			modelCatalog = "/".join(modelFile.split("/")[0:len(modelFile.split("/"))-1])
+ 			listdir(modelCatalog, modelList)
+ 		except Exception as e:
+ 			modelList.append("D:\\jinjia\\test.txt")
+ 			print(e)
+
  		dataCatalog = "/".join(dataFile.split("/")[0:len(dataFile.split("/"))-1])
  		dataList = []
  		listdir(dataCatalog, dataList)
@@ -263,7 +298,7 @@ b_login2.grid(row=1,column=2)
 
 
 
-l_result1 =Label(root,text='模板文件')
+l_result1 =Label(root,text='模板文件或内容')
 l_result1.grid(row=2,sticky=W)
 e_keyword1 =Entry(root,width = 20)
 e_keyword1.grid(row=2,column=1,sticky=E)
