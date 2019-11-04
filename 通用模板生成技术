@@ -79,6 +79,20 @@ def get_by_csv(fileUrlData):
 	da = df.to_dict(orient='records')
 	return da
 
+
+
+def get_by_excel_l(fileUrlData):
+	df = pd.DataFrame(pd.read_excel(fileUrlData))
+	#da = df.to_dict(orient='records')
+	return df.iteritems()
+
+#处理csv数据源
+def get_by_csv_l(fileUrlData):
+	print(fileUrlData)
+	df = pd.read_csv(open(fileUrlData))
+	#da = df.to_dict(orient='records')
+	return df.iteritems()
+
 """
 方法，下划线转小写
 """
@@ -131,6 +145,16 @@ def mysqlToJavaType(mysqlType):
 	else:
 	    return mysqlType
 
+#数组去重
+def  arrayWeightRemoval(strD):
+	# newList = eval(strD)
+	resultList = []
+	for obj in strD:
+		if obj not in resultList:
+			resultList.append(obj)
+	if resultList == []:
+		return ""
+	return str(resultList)
 
 
 def  getSql(modelFile,dataFile,createFile):
@@ -150,13 +174,16 @@ def  getSql(modelFile,dataFile,createFile):
 	#这个是自定义变量数组
 	variables = {}
 	# print("后缀名为"+file_suffix)
+	column_variable = []
 	if file_suffix == "xlsx" or file_suffix == "XLSX":
 		print("进入excel处理流程")
 		propertys = get_by_excel(fileUrlData)
+		column_variable = get_by_excel_l(fileUrlData)
 		print("excel完成")
 	if file_suffix == "csv":
 		print("进入csv处理流程")
 		propertys = get_by_csv(fileUrlData)
+		column_variable = get_by_csv_l(fileUrlData)
 		print("csv完成")
 
 	#这里再新增一些特殊的方法处理，为每一个变量新增一些转换方法
@@ -170,16 +197,30 @@ def  getSql(modelFile,dataFile,createFile):
 			#这个保存的是原来的值
 				objNew[str(obj1)] = obj.get(obj1)
 			else:
-				print("111111")
 				objNew[str(obj1)] = ""
-			# #获取驼峰数据结构
-			# objNew[str(obj1)+"_Tohump"] = underline_to_low(obj.get(obj1))
-			# #获取java类型
-			# objNew[str(obj1)+"_ToJavaType"] = mysqlToJavaType(obj.get(obj1))
-
 		newList.append(objNew)
 	print(newList)
 	propertys =  newList
+
+	new_colum = []
+	#这里转义行变量
+	# print(column_variable)
+	for obj in column_variable:
+		objdict = {}
+		key = obj[0]
+		listD = str(obj[1]).replace("Name: "+str(key)+"","").replace(", dtype: object","").replace(", dtype: object","").split(" ")
+		newD = []
+		for objD in listD:
+			if objD.find("\n")>-1:
+				print(objD)
+				newD.append("\n".join(objD.split("\n")[0:len(objD.split("\n"))-1]))
+		
+		value = newD
+		objdict[key] = value
+		column_variable = new_colum
+		new_colum.append(objdict)
+	column_variable = new_colum
+	print(column_variable)
 	# print(fileUrl,fileCatalog)
 	strJson = str(txt.get(0.,"end"))
 	# if file_suffix == "xlsx" 
@@ -213,12 +254,13 @@ def  getSql(modelFile,dataFile,createFile):
 	#这里新增各类过滤器
 	#1,获取驼峰数据结构
 	env = Environment(loader = FileSystemLoader(fileCatalog))
-	env.filters['Tohump'] = underline_to_low
-	env.filters['ToJavaType'] = mysqlToJavaType
+	env.filters['tohump'] = underline_to_low
+	env.filters['toJavaType'] = mysqlToJavaType
+	env.filters['arrayWeightRemoval'] = arrayWeightRemoval
 	template = env.get_template(fileUrl.replace(fileCatalog,"").replace("/",""))
 	print(propertys)
 
-	content = template.render(lv= propertys,ov = variables)
+	content = template.render(lv= propertys,ov = variables,cv = column_variable)
 	if createFile != None and createFile.find("/") > -1:
 		with open(createFile+"/"+fileName.split("--")[0]+"=="+modelFileName,"w",encoding = "utf-8") as f:
 			f.write(content)
@@ -256,7 +298,7 @@ def listdir(path,list_name):  #传入存储的list
 def main():
  	modelFile = str(e_keyword1.get()).strip().replace("\\","/")
  	print(modelFile)
- 	if modelFile.find("{{")  != -1 :
+ 	if modelFile.find("{{")  != -1  or modelFile.find("{%") != -1:
  		with open("D:\\jinjia\\test.txt","w",encoding = "utf-8") as f:
  			f.write(modelFile)
  		modelFile = "D:/jinjia/test.txt"
