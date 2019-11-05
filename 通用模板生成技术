@@ -40,8 +40,8 @@ def open1():
     filename = tkinter.filedialog.askopenfilename()
     if filename != '':
         print(filename)
-        e_keyword.delete(0,END)
-        e_keyword.insert(0,filename)
+        e_keyword.delete('0.0',END)
+        e_keyword.insert('0.0',filename)
     else:
         print('no')
 
@@ -50,8 +50,8 @@ def open2():
     filename = tkinter.filedialog.askopenfilename()
     if filename != '':
         print(filename)
-        e_keyword1.delete(0,END)
-        e_keyword1.insert(0,filename)
+        e_keyword1.delete('0.0',END)
+        e_keyword1.insert('0.0',filename)
     else:
         print('no')
 
@@ -75,7 +75,7 @@ def get_by_excel(fileUrlData):
 #处理csv数据源
 def get_by_csv(fileUrlData):
 	print(fileUrlData)
-	df = pd.read_csv(open(fileUrlData))
+	df = pd.read_csv(open(fileUrlData,encoding = "utf-8"))
 	da = df.to_dict(orient='records')
 	return da
 
@@ -89,9 +89,16 @@ def get_by_excel_l(fileUrlData):
 #处理csv数据源
 def get_by_csv_l(fileUrlData):
 	print(fileUrlData)
-	df = pd.read_csv(open(fileUrlData))
+	df = pd.read_csv(open(fileUrlData,encoding = "utf-8"))
 	#da = df.to_dict(orient='records')
 	return df.iteritems()
+
+
+#处理txt数据源
+# def  get_by_txt(fileUrlData):
+# 	df = pd.read_csv(open(fileUrlData,encoding = "utf-8"))
+# 	print(df)
+
 
 """
 方法，下划线转小写
@@ -180,11 +187,16 @@ def  getSql(modelFile,dataFile,createFile):
 		propertys = get_by_excel(fileUrlData)
 		column_variable = get_by_excel_l(fileUrlData)
 		print("excel完成")
-	if file_suffix == "csv":
+	if file_suffix == "csv" or file_suffix == 'txt':
 		print("进入csv处理流程")
 		propertys = get_by_csv(fileUrlData)
 		column_variable = get_by_csv_l(fileUrlData)
 		print("csv完成")
+	# if file_suffix == 'txt':
+	# 	print("进入txt处理流程")
+	# 	propertys = get_by_txt(fileUrlData)
+	# 	column_variable = get_by_txt_l(fileUrlData)
+	# 	print("txt处理流程")
 
 	#这里再新增一些特殊的方法处理，为每一个变量新增一些转换方法
 	newList = []
@@ -282,7 +294,7 @@ def func1(ls):
     for i in ls:
         e_keyword1.insert("end",i.decode("gbk")+'\n')
 
-
+   
 def listdir(path,list_name):  #传入存储的list
     for file in os.listdir(path):
         file_path = os.path.join(path, file)  
@@ -296,13 +308,20 @@ def listdir(path,list_name):  #传入存储的list
 
 
 def main():
- 	modelFile = str(e_keyword1.get()).strip().replace("\\","/")
+ 	modelFile = str(e_keyword1.get(0.0,'end')).strip().replace("\\","/")
  	print(modelFile)
  	if modelFile.find("{{")  != -1  or modelFile.find("{%") != -1:
- 		with open("D:\\jinjia\\test.txt","w",encoding = "utf-8") as f:
+ 		with open("D:\\jinjia\\modelFile.txt","w",encoding = "utf-8") as f:
  			f.write(modelFile)
- 		modelFile = "D:/jinjia/test.txt"
- 	dataFile = str(e_keyword.get()).strip().replace("\\","/")
+ 		modelFile = "D:/jinjia/modelFile.txt"
+ 	dataFile = str(e_keyword.get(0.0,'end')).strip().replace("\\","/")
+ 	if dataFile.find(".") == -1 or dataFile.find("/") ==-1:
+ 		with open("D:\\jinjia\\dataFile.txt","w",encoding = "utf-8") as f:
+ 			for index in range(0,5):
+ 				dataFile = dataFile.replace("\t\t","\t")
+ 			dataFile = dataFile.replace("\t",",")
+ 			f.write(dataFile)
+ 		dataFile = "D:/jinjia/dataFile.txt"
  	createFile = str(e_keyword2.get()).strip().replace("\\","/")
  	if createFile.find("/") == -1 and createFile.find("\\") == -1:
  		getSql(modelFile,dataFile,None)
@@ -312,7 +331,7 @@ def main():
  			modelCatalog = "/".join(modelFile.split("/")[0:len(modelFile.split("/"))-1])
  			listdir(modelCatalog, modelList)
  		except Exception as e:
- 			modelList.append("D:\\jinjia\\test.txt")
+ 			modelList.append("D:\\jinjia\\modelFile.txt")
  			print(e)
 
  		dataCatalog = "/".join(dataFile.split("/")[0:len(dataFile.split("/"))-1])
@@ -330,9 +349,9 @@ def main():
 
 root.geometry("300x400")
 root.resizable(width=True, height=True)
-l_result =Label(root,text='数据文件')
+l_result =Label(root,text='数据文件或内容')
 l_result.grid(row=1,sticky=W)
-e_keyword =Entry(root,width = 20)
+e_keyword =Text(root,width = 20,height = 2)
 e_keyword.grid(row=1,column=1,sticky=E)
 # 第二行，密码标签及输入框
 b_login2 = Button(root,text='查找',command=open1)
@@ -342,7 +361,7 @@ b_login2.grid(row=1,column=2)
 
 l_result1 =Label(root,text='模板文件或内容')
 l_result1.grid(row=2,sticky=W)
-e_keyword1 =Entry(root,width = 20)
+e_keyword1 =Text(root,width = 20,height = 2)
 e_keyword1.grid(row=2,column=1,sticky=E)
 # 第二行，密码标签及输入框
 b_login3 = Button(root,text='查找',command=open2)
