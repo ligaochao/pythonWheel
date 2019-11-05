@@ -10,6 +10,9 @@ import pyperclip
 import pyautogui
 import pandas as pd
 from tkinter.filedialog import askdirectory
+from PIL import ImageTk,Image
+import easygui as g
+import pymysql
 
 
 
@@ -305,7 +308,32 @@ def listdir(path,list_name):  #传入存储的list
 
 # print(listdir("C:\\Users\\ligc\\Desktop\\脚本\\个人脚本\\个人脚本大整理\\兴趣\\小工具集合", strd))
 # print(strd)
-
+def  openDB():
+	msg = "请输入数据库连接信息"
+	title = "请输入sql语句"
+	user_info = []
+	user_info = g.multenterbox(msg,title,("连接方式","sql语句"))
+	fistD = user_info[0].replace("//","/").split("/")
+	user = fistD[1].split(":")[0]
+	passwd = fistD[1].split(":")[1].split("@")[0]
+	host = fistD[1].split(":")[1].split("@")[1]
+	port = fistD[1].split(":")[2]
+	db = fistD[2].split("?")[0]
+	print(user,passwd,host,port,db)
+	connection = pymysql.connect(host=host
+	                       , port=int(port)
+	                       , db=db
+	                       , user=user
+	                       , passwd=passwd
+	                       , charset='utf8'
+	                       ,use_unicode=True)
+	sql = user_info[1] 
+	df = pd.read_sql(sql,connection)
+	df.to_csv(path_or_buf="D:\\jinjia\\DBFile.txt", index=False) # 写入csv文件
+	# e_keyword.delete("")
+	e_keyword.delete('0.0',END)
+	e_keyword.insert('0.0',"D:/jinjia/DBFile.txt")
+	# print(df.iteritems())
 
 def main():
  	modelFile = str(e_keyword1.get(0.0,'end')).strip().replace("\\","/")
@@ -345,9 +373,16 @@ def main():
 
 
 		
-
-
-root.geometry("300x400")
+# image2 =Image.open(r'D:\\jinjia\\123.gif')
+# background_image = ImageTk.PhotoImage(image2)
+# w = background_image.width()
+# h = background_image.height()
+# root.geometry("300x400")
+# # root.geometry('%dx%d+0+0' % (w,h))
+# background_label = Label(root, image=background_image)
+# background_label.place(x=0, y=0, relwidth=1, relheight=1)
+root.geometry("330x400")
+# root.geometry("300x400")
 root.resizable(width=True, height=True)
 l_result =Label(root,text='数据文件或内容')
 l_result.grid(row=1,sticky=W)
@@ -356,6 +391,8 @@ e_keyword.grid(row=1,column=1,sticky=E)
 # 第二行，密码标签及输入框
 b_login2 = Button(root,text='查找',command=open1)
 b_login2.grid(row=1,column=2)
+b_login2 = Button(root,text='数据库',command=openDB)
+b_login2.grid(row=1,column=3)
 
 
 
@@ -393,6 +430,8 @@ b_login3.grid(row=5,column=1)
 
 windnd.hook_dropfiles(e_keyword.winfo_id(),func)
 windnd.hook_dropfiles(e_keyword1.winfo_id(),func1)	
+
+# root.configure(background="black")
 root.wm_attributes('-topmost',1)
  
 root.mainloop()
