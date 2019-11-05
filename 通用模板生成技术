@@ -13,6 +13,7 @@ from tkinter.filedialog import askdirectory
 from PIL import ImageTk,Image
 import easygui as g
 import pymysql
+import configparser
 
 
 
@@ -312,7 +313,20 @@ def  openDB():
 	msg = "请输入数据库连接信息"
 	title = "请输入sql语句"
 	user_info = []
-	user_info = g.multenterbox(msg,title,("连接方式","sql语句"))
+	#先经过默认配置的信息，然后再考虑手动添加
+
+	config=configparser.ConfigParser()
+	config.read('D:\\jinjia\\connection.ini',encoding = "utf-8")
+	print(config.sections())
+	result = g.choicebox(msg="请选择默认连接方式，手动输入请点cancel",title="",choices=config.sections())
+	print(result)
+	if result == None:
+		user_info = g.multenterbox(msg,title,("连接方式","sql语句"))
+	else:
+		user_info.append(config[result]["connection"])
+		user_info.append(config[result]["sql"])
+		
+		print(user_info) 
 	fistD = user_info[0].replace("//","/").split("/")
 	user = fistD[1].split(":")[0]
 	passwd = fistD[1].split(":")[1].split("@")[0]
