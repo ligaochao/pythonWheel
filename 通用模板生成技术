@@ -107,7 +107,7 @@ def get_by_csv_l(fileUrlData):
 """
 方法，下划线转小写
 """
-def underline_to_low(strD):
+def tohump(strD):
     strResult = ""
     try:
 	    if strD != "" and strD.find('_')>-1:
@@ -141,7 +141,7 @@ def txt_wrap_by(start_str, end, html):
 	        return html[start:end].strip()
 
 #去掉两个字符之间的数据
-def mysqlToJavaType(mysqlType):
+def toJavaType(mysqlType):
 	if mysqlType != None:
 		mysqlType = str(mysqlType).replace("（","(").replace("）",")")
 		mysqlType = mysqlType.replace(txt_wrap_by('(',')',mysqlType),"").replace("(","").replace(")","").strip()
@@ -270,19 +270,20 @@ def  getSql(modelFile,dataFile,createFile):
 	#这里新增各类过滤器
 	#1,获取驼峰数据结构
 	env = Environment(loader = FileSystemLoader(fileCatalog))
-	env.filters['tohump'] = underline_to_low
-	env.filters['toJavaType'] = mysqlToJavaType
-	env.filters['arrayWeightRemoval'] = arrayWeightRemoval
+	env.lstrip_blocks = True
+	env.trim_blocks = True
+	env = addfliter(env)
+	
 	template = env.get_template(fileUrl.replace(fileCatalog,"").replace("/",""))
 	print(propertys)
 
 	content = template.render(lv= propertys,ov = variables,cv = column_variable)
 	if createFile != None and createFile.find("/") > -1:
 		with open(createFile+"/"+fileName.split("--")[0]+"=="+modelFileName,"w",encoding = "utf-8") as f:
-			f.write(content)
+			f.write(content.replace("{ ","{").replace(" }","}"))
 	else:
 		#写入粘贴板
-		pyperclip.copy(content)
+		pyperclip.copy(content.replace("{ ","{").replace(" }","}"))
 		#提示框，弹出框
 		pyautogui.alert(text='处理成功，ctrl+v获取结果',title='',button='OK') 
 
@@ -385,6 +386,38 @@ def main():
  				getSql(modelFile,dataFile,createFile)
  		os.startfile(createFile)
 
+def  modelFilter():
+	config=configparser.ConfigParser()
+	config.read('D:\\jinjia\\filterConf.ini',encoding = "utf-8")
+	print(config.sections())
+	result = g.choicebox(msg="请选择默认连接方式，手动输入请点cancel",title="",choices=config.sections())
+	print(result)
+	if result != None:
+		#提示框，弹出框
+		choice = pyautogui.confirm(text=config[result]["explain"],title='查看内容为',buttons=["ok","直接运行","cancel"])
+		# choice = pyautogui.alert(text=config[result]["explain"],title='',button=["cancel","ok"]) 
+		if choice.find("cancel") > -1:
+			modelFilter()
+		if choice.find("直接运行")>-1:
+			#获取粘贴板内容
+			try:
+				sentence = pyperclip.paste()
+				print("获得的变量"+str(sentence))
+				lastR = eval(result)(sentence)
+				pyperclip.copy(lastR )
+				choice = pyautogui.alert(text="执行完成",title='',button="OK") 
+			except Exception as e:
+				choice = pyautogui.alert(text=str(e),title='',button="OK") 
+				# raise e
+		else:
+			pyperclip.copy(result)
+			
+		#写入粘贴板
+		
+
+		# print(choice)
+
+		
 
 		
 # image2 =Image.open(r'D:\\jinjia\\123.gif')
@@ -395,7 +428,7 @@ def main():
 # # root.geometry('%dx%d+0+0' % (w,h))
 # background_label = Label(root, image=background_image)
 # background_label.place(x=0, y=0, relwidth=1, relheight=1)
-root.geometry("330x400")
+root.geometry("330x400+1500-400")
 # root.geometry("300x400")
 root.resizable(width=True, height=True)
 l_result =Label(root,text='数据文件或内容')
@@ -417,6 +450,8 @@ e_keyword1.grid(row=2,column=1,sticky=E)
 # 第二行，密码标签及输入框
 b_login3 = Button(root,text='查找',command=open2)
 b_login3.grid(row=2,column=2)
+b_login3 = Button(root,text='过滤器',command=modelFilter)
+b_login3.grid(row=2,column=3)
 
 
 
@@ -444,6 +479,24 @@ b_login3.grid(row=5,column=1)
 
 windnd.hook_dropfiles(e_keyword.winfo_id(),func)
 windnd.hook_dropfiles(e_keyword1.winfo_id(),func1)	
+
+#在这边写新的方法
+def  xmlSpecialCharacterConversion(obj):
+	obj = obj.replace("<","&lt;")
+	obj = obj.replace(">","&gt;")
+	obj = obj.replace("&","&amp;")
+	obj = obj.replace('"',"&quot;")
+	obj = obj.replace("'","&apos;")
+	return obj
+
+
+#在这里添加自定义的过滤器
+
+def  addfliter(env):
+	env.filters['tohump'] = tohump
+	env.filters['toJavaType'] = toJavaType
+	env.filters['arrayWeightRemoval'] = arrayWeightRemoval
+	return  env
 
 # root.configure(background="black")
 root.wm_attributes('-topmost',1)
