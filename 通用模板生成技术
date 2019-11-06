@@ -43,7 +43,7 @@ def  getTheContentBetweenTwoCharacters(pendingString, startCharacter, endCharact
 def open1():
     filename = tkinter.filedialog.askopenfilename()
     if filename != '':
-        print(filename)
+        # print(filename)
         e_keyword.delete('0.0',END)
         e_keyword.insert('0.0',filename)
     else:
@@ -53,7 +53,7 @@ def open1():
 def open2():
     filename = tkinter.filedialog.askopenfilename()
     if filename != '':
-        print(filename)
+        # print(filename)
         e_keyword1.delete('0.0',END)
         e_keyword1.insert('0.0',filename)
     else:
@@ -64,7 +64,7 @@ def open3():
     path_ = askdirectory()
     filename = path_ 
     if filename != '':
-        print(filename)
+        # print(filename)
         e_keyword2.delete(0,END)
         e_keyword2.insert(0,filename)
     else:
@@ -78,7 +78,7 @@ def get_by_excel(fileUrlData):
 
 #处理csv数据源
 def get_by_csv(fileUrlData):
-	print(fileUrlData)
+	# print(fileUrlData)
 	df = pd.read_csv(open(fileUrlData,encoding = "utf-8"))
 	da = df.to_dict(orient='records')
 	return da
@@ -92,7 +92,7 @@ def get_by_excel_l(fileUrlData):
 
 #处理csv数据源
 def get_by_csv_l(fileUrlData):
-	print(fileUrlData)
+	# print(fileUrlData)
 	df = pd.read_csv(open(fileUrlData,encoding = "utf-8"))
 	#da = df.to_dict(orient='records')
 	return df.iteritems()
@@ -143,8 +143,12 @@ def txt_wrap_by(start_str, end, html):
 #去掉两个字符之间的数据
 def toJavaType(mysqlType):
 	if mysqlType != None:
-		mysqlType = str(mysqlType).replace("（","(").replace("）",")")
-		mysqlType = mysqlType.replace(txt_wrap_by('(',')',mysqlType),"").replace("(","").replace(")","").strip()
+		try:
+			mysqlType = str(mysqlType).replace("（","(").replace("）",")")
+			mysqlType = mysqlType.replace(txt_wrap_by('(',')',mysqlType),"").replace("(","").replace(")","").strip()
+		except Exception as e:
+			print(e)
+		
 	if mysqlType == "varchar":
 	    return "String"
 	elif mysqlType == "int":
@@ -174,9 +178,9 @@ def  getSql(modelFile,dataFile,createFile):
 	fileCatalog = "/".join(fileUrl.split("/")[0:len(fileUrl.split("/"))-1])
 	#这里获取数据文件信息
 	fileUrlData = dataFile
-	print("模板一是："+str(fileUrlData))
+	# print("模板一是："+str(fileUrlData))
 	fileCatalog1 = "/".join(fileUrlData.split("/")[0:len(fileUrlData.split("/"))-1])
-	print("模板一是1："+str(fileCatalog1))
+	# print("模板一是1："+str(fileCatalog1))
 	#获取文件后缀名
 	file_suffix_list = fileUrlData.replace(fileCatalog1,"").replace("/","").split(".")
 	file_suffix = file_suffix_list[len(file_suffix_list)-1]
@@ -215,7 +219,7 @@ def  getSql(modelFile,dataFile,createFile):
 			else:
 				objNew[str(obj1)] = ""
 		newList.append(objNew)
-	print(newList)
+	# print(newList)
 	propertys =  newList
 
 	new_colum = []
@@ -228,7 +232,7 @@ def  getSql(modelFile,dataFile,createFile):
 		newD = []
 		for objD in listD:
 			if objD.find("\n")>-1:
-				print(objD)
+				# print(objD)
 				newD.append("\n".join(objD.split("\n")[0:len(objD.split("\n"))-1]))
 		
 		value = newD
@@ -236,7 +240,7 @@ def  getSql(modelFile,dataFile,createFile):
 		column_variable = new_colum
 		new_colum.append(objdict)
 	column_variable = new_colum
-	print(column_variable)
+	# print(column_variable)
 	# print(fileUrl,fileCatalog)
 	strJson = str(txt.get(0.,"end"))
 	# if file_suffix == "xlsx" 
@@ -248,18 +252,18 @@ def  getSql(modelFile,dataFile,createFile):
 		if file_separator != None and file_separator !="None":
 			print("文件分割符"+file_separator)
 		# additional_information = None
-		variables = additional_information
+		variables = variable_information
 	except Exception as e:
-		pass
+		print("11111111"+str(e))
 	# fileName = fileUrlData.replace(fileCatalog1,"").replace("/","").replace("."+file_suffix,"")
 	fileName = ".".join(file_suffix_list[0:len(file_suffix_list)-1])
 	#这里可能存在风险，一般不会有
 	modelFileName = modelFile.split("/")[len(modelFile.split("/"))-1].split(".")[0]
 	index = 0
-	print(variables)
+	# print(variables)
 	# print("-----"+str(fileName.split("--")))
 	for obj in fileName.split("--"):
-		print(obj)
+		# print(obj)
 		if obj != None:
 			variables["_"+str(index)] = str(obj)
 		index = index + 1
@@ -275,7 +279,7 @@ def  getSql(modelFile,dataFile,createFile):
 	env = addfliter(env)
 	
 	template = env.get_template(fileUrl.replace(fileCatalog,"").replace("/",""))
-	print(propertys)
+	# print(propertys)
 
 	content = template.render(lv= propertys,ov = variables,cv = column_variable)
 	if createFile != None and createFile.find("/") > -1:
@@ -306,7 +310,7 @@ def listdir(path,list_name):  #传入存储的list
         if os.path.isdir(file_path):  
             listdir(file_path, list_name)  
         else:
-            list_name.append(os.path.basename(file_path))
+            list_name.append(file_path.replace("\\","/"))
 
 # print(listdir("C:\\Users\\ligc\\Desktop\\脚本\\个人脚本\\个人脚本大整理\\兴趣\\小工具集合", strd))
 # print(strd)
@@ -318,9 +322,9 @@ def  openDB():
 
 	config=configparser.ConfigParser()
 	config.read('D:\\jinjia\\connection.ini',encoding = "utf-8")
-	print(config.sections())
+	# print(config.sections())
 	result = g.choicebox(msg="请选择默认连接方式，手动输入请点cancel",title="",choices=config.sections())
-	print(result)
+	# print(result)
 	if result == None:
 		user_info = g.multenterbox(msg,title,("连接方式","sql语句"))
 	else:
@@ -344,27 +348,27 @@ def  openDB():
 	                       ,use_unicode=True)
 	sql = user_info[1] 
 	df = pd.read_sql(sql,connection)
-	df.to_csv(path_or_buf="D:\\jinjia\\DBFile.txt", index=False) # 写入csv文件
+	df.to_csv(path_or_buf="D:\\jinjia\\data\\DBFile.txt", index=False) # 写入csv文件
 	# e_keyword.delete("")
 	e_keyword.delete('0.0',END)
-	e_keyword.insert('0.0',"D:/jinjia/DBFile.txt")
+	e_keyword.insert('0.0',"D:/jinjia/data/DBFile.txt")
 	# print(df.iteritems())
 
 def main():
  	modelFile = str(e_keyword1.get(0.0,'end')).strip().replace("\\","/")
  	print(modelFile)
  	if modelFile.find("{{")  != -1  or modelFile.find("{%") != -1:
- 		with open("D:\\jinjia\\modelFile.txt","w",encoding = "utf-8") as f:
+ 		with open("D:\\jinjia\\model\\modelFile.txt","w",encoding = "utf-8") as f:
  			f.write(modelFile)
- 		modelFile = "D:/jinjia/modelFile.txt"
+ 		modelFile = "D:/jinjia/model/modelFile.txt"
  	dataFile = str(e_keyword.get(0.0,'end')).strip().replace("\\","/")
  	if dataFile.find(".") == -1 or dataFile.find("/") ==-1:
- 		with open("D:\\jinjia\\dataFile.txt","w",encoding = "utf-8") as f:
+ 		with open("D:\\jinjia\\data\\dataFile.txt","w",encoding = "utf-8") as f:
  			for index in range(0,5):
  				dataFile = dataFile.replace("\t\t","\t")
  			dataFile = dataFile.replace("\t",",")
  			f.write(dataFile)
- 		dataFile = "D:/jinjia/dataFile.txt"
+ 		dataFile = "D:/jinjia/data/dataFile.txt"
  	createFile = str(e_keyword2.get()).strip().replace("\\","/")
  	if createFile.find("/") == -1 and createFile.find("\\") == -1:
  		getSql(modelFile,dataFile,None)
@@ -374,16 +378,21 @@ def main():
  			modelCatalog = "/".join(modelFile.split("/")[0:len(modelFile.split("/"))-1])
  			listdir(modelCatalog, modelList)
  		except Exception as e:
- 			modelList.append("D:\\jinjia\\modelFile.txt")
+ 			modelList.append("D:\\jinjia\\model\\modelFile.txt")
  			print(e)
 
  		dataCatalog = "/".join(dataFile.split("/")[0:len(dataFile.split("/"))-1])
  		dataList = []
  		listdir(dataCatalog, dataList)
+ 		print(dataList)
  		for obj in dataList:
  			for obj1 in modelList:
  				print(obj,obj1,createFile)
- 				getSql(modelFile,dataFile,createFile)
+ 				try:
+ 					getSql(obj1,obj,createFile)
+ 				except Exception as e:
+ 					print(e)
+ 				
  		os.startfile(createFile)
 
 def  modelFilter():
@@ -482,9 +491,9 @@ windnd.hook_dropfiles(e_keyword1.winfo_id(),func1)
 
 #在这边写新的方法
 def  xmlSpecialCharacterConversion(obj):
+	obj = obj.replace("&","&amp;")
 	obj = obj.replace("<","&lt;")
 	obj = obj.replace(">","&gt;")
-	obj = obj.replace("&","&amp;")
 	obj = obj.replace('"',"&quot;")
 	obj = obj.replace("'","&apos;")
 	return obj
