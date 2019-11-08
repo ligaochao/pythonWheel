@@ -1,0 +1,98 @@
+'''
+@Description: A background script for using hotkey to search the clipboard text in web
+@Author: iluvrachel
+@Date: 2019-09-01 19:14:37
+@LastEditTime: 2019-09-02 21:43:55
+@LastEditors: Please set LastEditors
+'''
+#In[]:
+#coding:utf-8
+import win32clipboard as w
+import win32con
+import webbrowser
+import ctypes
+import ctypes.wintypes
+import threading
+import time
+
+user32 = ctypes.windll.user32  # load user32.dll
+EXIT = False
+RUN  = False
+
+class Hotkey(threading.Thread):  #Create Thread.threading Class
+
+    def run(self):  
+        '''
+        @description: define hotkey and keep listening
+        @param {None} 
+        @return: None
+        '''
+        global EXIT
+        global RUN
+        hkid1 = 99 # hotkey id for identify
+        hkid2 = 100
+        user32.UnregisterHotKey(None, hkid1)# Unregister HotKey, otherwise next time register will fail
+        user32.UnregisterHotKey(None, hkid2)
+
+        if not user32.RegisterHotKey(None, hkid1, win32con.MOD_ALT, 66):   # alt+b for search 
+            print ("Unable to register id", hkid1) # if fail to register
+
+        if not user32.RegisterHotKey(None, hkid2, win32con.MOD_ALT, 67):   # alt+c for exit  
+            print ("Unable to register id", hkid2) 
+
+        # listening for hotkey press
+        try:  
+            msg = ctypes.wintypes.MSG()  
+
+            while True:
+                time.sleep(0.1) # sleep can make CPU occupation significantly lower
+                if user32.GetMessageA(ctypes.byref(msg), None, 0, 0) != 0:
+
+                    if msg.message == win32con.WM_HOTKEY:  
+                        if msg.wParam == hkid1:
+
+                            RUN = True
+                        elif msg.wParam == hkid2:
+
+                            EXIT=True
+                            return
+
+                    user32.TranslateMessage(ctypes.byref(msg))  
+                    user32.DispatchMessageA(ctypes.byref(msg))
+
+        finally:
+            user32.UnregisterHotKey(None, hkid1)#Unregister HotKey, otherwise next time register will fail
+            user32.UnregisterHotKey(None, hkid2)
+
+
+# Solution_1: use .bat to initial the hotkey setting : failed
+# Solution_2: running background and wait for hotkey
+def get_text():
+    '''
+    @description: read from clipbroad
+    @param {None} 
+    @return: str
+    '''
+    w.OpenClipboard()
+    #CF_TEXT will cause a wrong code while clipping Chinese characters
+    t = w.GetClipboardData(win32con.CF_UNICODETEXT) 
+    w .CloseClipboard()
+    print(type(t))
+    return t
+
+
+
+hotkey = Hotkey()
+hotkey.start()
+
+while(True):
+    time.sleep(0.1)
+    if RUN==True:
+        keyword = get_text()
+        print(keyword)
+        # webbrowser.open("http://www.baidu.com/s?wd="+keyword)
+        RUN=False
+
+    elif EXIT==True:
+        # end 
+        exit(0)
