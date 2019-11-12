@@ -1,0 +1,220 @@
+import requests
+import json
+from tkinter import ttk,filedialog
+from tkinter import *
+import tkinter as tk
+import os,time
+from tkinter import messagebox
+import threading
+ 
+global song_dic
+song_dic = {}
+def search():
+    keys = keyin.get()
+    search_url = 'http://songsearch.kugou.com/song_search_v2?callback=jQuery191034642999175022426_1489023388639&keyword={}&page=1&pagesize=30&userid=-1&clientver=&platform=WebFilter&tag=em&filter=2&iscorrection=1&privilege_filter=0&_=1489023388641'
+    play_url = 'http://www.kugou.com/yy/index.php?r=play/getdata&hash={}'
+    search_file = requests.get(search_url.format(keys))
+    search_html = search_file.content.decode().replace(')', '').replace(
+        'jQuery191034642999175022426_1489023388639(', '')
+    views = json.loads(search_html)
+    global song_dic
+    song_dic = {}
+    song_list = []
+    i=0
+ 
+    fill_line = canvas.create_rectangle(1.5, 1.5, 0, 23, width=0, fill="green")
+    canvas.coords(fill_line, (0, 0, 646, 60))
+ 
+ 
+    # 清空表格
+    for item in treeview.get_children():
+        treeview.delete(item)
+ 
+    for view in views['data']['lists']:
+        root.update()
+        song_name = view['SongName'].replace('<em>', '').replace('</em>', '')
+        album_name = view['AlbumName'].replace('<em>', '').replace('</em>', '')
+        sing_name = view['SingerName'].replace('<em>', '').replace('</em>', '')
+        file_hash = view['FileHash']
+        song_info = {
+            '歌名': song_name,
+            '演唱者': sing_name,
+            '专辑': album_name if album_name else None,
+            'filehash': file_hash,
+            'mp3url': None
+        }
+        mp3_file = requests.get(play_url.format(song_info['filehash'])).content.decode()
+        mp3_json = json.loads(mp3_file)
+        print(mp3_json)
+        real_url = mp3_json['data']['play_url']
+        song_info['mp3url'] = real_url # 歌曲信息获取完毕！
+ 
+        song_name = str(song_info['歌名'])+str(song_info['演唱者'])+str(song_info['专辑'])
+        song_list.append(song_info['演唱者'])
+        song_list.append(song_info['专辑'])
+        song_list.append(song_info['mp3url'])
+        treeview.insert('', i, values=(song_info['歌名'], song_info['演唱者'], song_info['专辑']))
+        i += 1
+        song_dic[song_name] = song_list
+        song_list = []
+ 
+    # 清空进度条
+    fill_line = canvas.create_rectangle(1.5, 1.5, 0, 23, width=0, fill="white")
+    x = 300  # 未知变量，可更改
+    n = 643 / x  # 643是矩形填充满的次数
+ 
+    for t in range(x):
+        n = n + 643 / x
+        # 以矩形的长度作为变量值更新
+        canvas.coords(fill_line, (0, 0, n, 60))
+        root.update()
+        time.sleep(0)  # 时间为0，即飞速清空进度条
+ 
+ 
+ 
+def musicsave():
+    try:
+        dirsetting = open('resource/settings/songdirsetting.ini', 'r')
+        dirlast = dirsetting.read()
+        dirsetting.close()
+    except:
+        dirlast='D:'  # 默认保存文件夹
+    for item in treeview.selection():
+        #item = I001
+        item_text = treeview.item(item, "values")
+        song_name1 = item_text[1]+' - '+item_text[0]
+        songkey = item_text[0]+item_text[1]+item_text[2]
+    filename = dirlast +'/'+ song_name1 + ".mp3"
+    with open(filename, "wb")as fp:
+        global song_dic
+        real_url = song_dic[songkey][2]
+        fp.write(requests.get(real_url).content)
+    messagebox.showinfo('下载完成', '歌曲《'+song_name1+'》已保存至\n'+dirlast+' 文件夹！')
+ 
+def musicsave2(event):
+    musicsave()
+def search2(event):
+    two_threading()
+ 
+def chosedir(): # 选择保存文件夹
+    def chose():
+        default_dir = r"C:\Users\lenovo\Desktop"  # 设置默认打开目录
+        dname = filedialog.askdirectory(title=u"选择文件夹",
+                                        initialdir=(os.path.expanduser(default_dir)))
+        dirsetting = open('resource/settings/songdirsetting.ini', 'w')
+        dirsetting.write(dname)
+        dirsetting.close()
+        dirname.set(dname)
+    chosebox = tk.Toplevel()
+    chosebox.iconbitmap(r'resource/EC.ico')  # 窗口图标设置
+    chosebox.title("设置")
+    chosebox.geometry(('320x100+720+200'))  # 宽度x 高度+横向偏移量(距左边)+纵向偏移量(距上边)
+    chosebox.resizable(0, 0)
+    tk.Label(chosebox, text="文件保存至: ", bd=1, width=10).place(x=7, y=30)
+    dirname = tk.StringVar()  # 文件绝对地址
+    try:
+        dirsetting = open('resource/settings/songdirsetting.ini', 'r')
+        dirlast = dirsetting.read()
+        dirname.set(dirlast)
+        dirsetting.close()
+    except:
+        dirname.set('D:')  # 默认保存文件夹
+    showdir = tk.Entry(chosebox, textvariable=dirname, width=26)
+    showdir.place(x=74, y=30)
+    ttk.Button(chosebox, text='浏览', compound='center', width=5, command=chose).place(x=262, y=27)
+ 
+# 显示下载进度
+def progress():
+    # 填充进度条
+    fill_line = canvas.create_rectangle(1.5, 1.5, 0, 23, width=0, fill="green")
+    x = 300  # 未知变量，可更改
+    n = 643 / x  # 643是矩形填充满的次数
+    for i in range(x):
+        n = n + 643 / x
+        canvas.coords(fill_line, (0, 0, n, 60))
+        root.update()
+        time.sleep(0.02)  # 控制进度条流动的速度
+        if n>600:
+            break
+    canvas.coords(fill_line, (0, 0, 600, 60)) # 90%时停止进度条，等待请求返回
+    root.update()
+ 
+ 
+def two_threading():
+    threads = [] #定义线程池
+    t1 = threading.Thread(target=search)
+    threads.append(t1)
+    t2 = threading.Thread(target=progress)
+    threads.append(t2)
+ 
+    for t in threads:
+        t.setDaemon(True) # 设置为守护线程
+        t.start()
+ 
+ 
+root = tk.Tk()
+root.title('欢迎使用本工具')
+root.geometry(('700x480+200+100'))  # 宽度x 高度+横向偏移量(距左边)+纵向偏移量(距上边)
+ 
+menuBar = tk.Menu(root)
+root.config(menu=menuBar)
+ 
+setMenu = tk.Menu(menuBar, tearoff=0)
+setMenu.add_command(label="保存文件夹", command = chosedir)
+menuBar.add_cascade(label="设置", menu=setMenu)
+ 
+title = Label(root, text='付费音乐破解助手', font=("宋体", 18))  # 设置标题
+title.place(x=260, y=10)
+ 
+keywords = Label(root, text='关键词:', width=6, height=1, bd=2,
+                font=('微软雅黑',12))
+keywords.place(x=150, y=56)
+ 
+keyshow = StringVar()
+keyin = Entry(root, textvariable=keyshow, width=35,bg="#c7edcc",font=('微软雅黑',10))  # 关键词输入框
+keyin.place(x=220, y=60)
+keyin.bind("<Return>", search2) # 绑定回车键搜索
+ 
+# btphoto = tk.PhotoImage(file='resource/image/bt.png')
+# bt3 = tk.Button(root, image = btphoto,bd =0, command=two_threading)
+bt3 = tk.Button(root,bd =0, command=two_threading)
+bt3.place(x=500, y=58)
+ 
+# 设置下载进度条
+canvas = tk.Canvas(root, width=643, height=5, bg="white")
+canvas.place(x=28, y=88)
+ 
+#bt4 = ttk.Button(root, text='下载',width=5, command=musicsave)
+#bt4.place(x=630, y=57)
+ 
+columns = ("歌名", "演唱者","专辑")
+treeview = ttk.Treeview(root, height=16, show="headings", columns=columns)  # 表格
+ 
+treeview.column("歌名", width=200, anchor='center')  # 表示列,不显示
+treeview.column("演唱者", width=200, anchor='center')
+treeview.column("专辑", width=240, anchor='center')
+ 
+treeview.heading("歌名", text="歌名")  # 显示表头
+treeview.heading("演唱者", text="演唱者")
+treeview.heading("专辑", text="专辑")
+ 
+treeview.place(x=30,y=96)
+def treeview_sort_column(tv, col, reverse):  # Treeview、列名、排列方式
+    l = [(tv.set(k, col), k) for k in tv.get_children('')]
+    l.sort(reverse=reverse)  # 排序方式
+    # rearrange items in sorted positions
+    for index, (val, k) in enumerate(l):  # 根据排序后索引移动
+        tv.move(k, '', index)
+    tv.heading(col, command=lambda: treeview_sort_column(tv, col, not reverse))  # 重写标题，使之成为再点倒序的标题
+for col in columns:  # 绑定函数，使表头可排序
+    treeview.heading(col, text=col, command=lambda _col=col: treeview_sort_column(treeview, _col, False))
+ 
+menu = Menu(treeview, tearoff=0)
+menu.add_command(label="下载", command=musicsave)
+def popupmenu(event):
+    menu.post(event.x_root, event.y_root)
+treeview.bind("<Button-3>", popupmenu)
+treeview.bind('<Double-1>', musicsave2)
+tk.Label(root, text="左键双击或右键下载歌曲", width=19).place(x=30,y=450)
+# root.iconbitmap(r'resource/EC.ico')  # 窗口图标设置
+root.mainloop()
