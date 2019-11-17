@@ -76,13 +76,7 @@
   userApisOn;      /*是否加载自定义解析接口*/
   GMaddStyle(`
     /*TMHY:TamperMonkeyHuanYan*/
-    #TMHYvideoContainer{z-index:999998;background:rgba(0,0,0,.7);position:fixed;top:7em;left:5em;height:65%;width:65%;resize:both;overflow:auto;box-shadow:2px 2px 5px 5px rgba(255,255,0,.8);}
-    /*TMHYVideoContainer*/
-    #TMHYvideoContainer button{top:.1em;cursor:pointer;visibility:hidden;font-size:3em;color:#fff;background:transparent;border:0;}
-    #TMHYvideoContainer:hover button{visibility:visible;}
-    #TMHYvideoContainer:hover button:hover{color:#ff0;}
-    #TMHYiframe{height:100%;width:100%;overflow:auto;position:absolute;top:0;left:0;margin:auto;border:0;box-shadow:0 0 3em rgba(0,0,0,.4);z-index:-1;}
-    /*TMHYIframe*/
+
     #TMHYul{position:fixed;top:5em;left:0;padding:0;z-index:999999;}
     #TMHYul li{list-style:none;}
     #TMHYul svg{float:right;}
@@ -95,25 +89,6 @@
     .TM3 li:last-child{border-radius:0 0 .35em .35em;}
     .TM3 li:first-child{border-radius:.35em .35em 0 0;}
     .TM1:hover .TM3{display:block;}
-    /*自定义解析接口,本页播放窗口设置*/
-    .TMHYp {position:fixed;top:20%;left:20%;z-index:999999;background:yellow;padding:30px 20px 10px 20px;border-radius:10px;text-align:center;}/*TMHYpanel*/
-    .TMHYp * {font-size:16px;background:rgba(255,255,0,1);font-family:'微软雅黑';color:#3a3a3a;border-radius:10px;}
-    #tMuserDefine li {margin:5px;width:100%;list-style-type:none;}
-    .TMHYp input[type=text] {border-radius:5px !important;border:1px solid #3a3a3a;margin:2px 10px 2px 5px;padding:2px 5px;}
-    .TMHYlti {width:350px;}/*TMHYlongTextInput*/
-    .TMHYmti {width:160px;}/*TMHYmti*/
-    .idelete {float: left;  display: inline-block; color: red; padding: 0 20px !important; cursor: pointer;}
-    .iname {padding-right:10px;}
-    li:hover .idelete,li:hover .ilink,li:hover .iname {background:rgba(224,175,17,0.62);}
-    .TMHYp button {border:1px solid #3a3a3a;border-radius:5px;cursor:pointer;padding: 2px 10px;margin:10px 20px 0 20px;}
-    .TMHYp button:hover {background:#3a3a3a;color:yellow;}
-    .TMHYClose {position:absolute;top:0;left:0;margin:0!important;}
-    .TMHYp fieldset {margin:0;padding:10px;}
-    .TMHYp legend {padding:0 10px;}
-    .TMHYp label {display:inline-block;}
-    .TMHYspan80 {display:inline-block;text-align:right;width:80px;}
-    .TMHYspan120 {display:inline-block;text-align:right;width:120px;}
-    #inTabSettingSave {position:relative;margin-top:10px;padding:3px 20px;}
   `);
   var defaultapi = {
     title: "工作辅助台",
