@@ -1,0 +1,185 @@
+#!/usr/bin/python
+# -*- coding: UTF-8 -*-
+
+import pymysql
+import pandas as pd
+
+
+
+query_table_colums = '''
+		SELECT
+			COLUMN_NAME as 列名,
+			COLUMN_TYPE as 类型,
+			COLUMN_DEFAULT as 默认值,
+		  COLUMN_KEY  as 主键,
+			#TABLE_NAME  as 表名,
+			IS_NULLABLE  as 非空,
+			COLUMN_COMMENT as 备注
+		FROM
+			information_schema. COLUMNS
+		WHERE
+			TABLE_SCHEMA = 'AAAA'
+		AND TABLE_NAME = 'BBBB'
+		ORDER BY
+			ORDINAL_POSITION; 
+	'''
+
+
+#把数据库查询结果转换为json
+def sql_fetch_json(cursor: pymysql.cursors.Cursor):
+    """
+    Convert the pymysql SELECT result to json format
+    :param cursor:
+    :return:
+    """
+    keys = []
+    for column in cursor.description:
+        keys.append(column[0])
+    key_number = len(keys)
+
+    json_data = []
+    for row in cursor.fetchall():
+        item = dict()
+        for q in range(key_number):
+            item[keys[q]] = row[q]
+        json_data.append(item)
+
+    return json_data
+
+#查询通用接口
+def  queryMysql(sql,dbName="personal_product"):
+	# 打开数据库连接
+	# db = pymysql.connect("localhost", "root", "lgc057171", dbName, charset='utf8' )
+	# db = pymysql.connect("localhost", "root", "lgc057171", dbName, charset='utf8' )
+	db = pymysql.connect(host='127.0.0.1'
+	                   , port=59068
+	                   , db=dbName
+	                   , user='rw_3fdt9jmiaf7d6'
+	                   , passwd='YQm3GM7d3QYorV9Y'
+	                   , charset='utf8')
+	# 使用cursor()方法获取操作游标 
+	cursor = db.cursor()
+	# 使用execute方法执行SQL语句
+	cursor.execute(sql)
+	# 使用 fetchone() 方法获取一条数据
+	# data = cursor.fetchone()
+	data = sql_fetch_json(cursor)
+	# print(data)
+	# 关闭数据库连接
+	db.close()
+	return data 
+# 插入,更新，删除通用接口
+def  saveMysql(sql,dbName="personal_product"):
+	# 打开数据库连接
+	db = pymysql.connect("localhost", "root", "lgc057171", dbName, charset='utf8' )
+	# 使用cursor()方法获取操作游标 
+	cur= db.cursor()
+	# 使用execute方法执行SQL语句
+	try:
+		cur.execute(sql)
+		#提交
+		db.commit()
+	except Exception as e:
+		#错误回滚
+		print(e)
+		db.rollback() 
+	finally:
+		db.close()
+	return True;
+
+
+
+
+#快捷方法框架
+def  create_json_model(db_name,table_name):
+	
+	query_sql = query_sql.replace('AAAA',db_name).replace('BBBB',table_name)
+	queryResult = queryMysql(query_sql)
+	return queryResult
+    #查询sql的模板
+
+def getAllResult(dataName):
+	global query_table_colums
+	query_sql = 'SELECT TABLE_NAME,TABLE_COMMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = "'+dataName+'"'
+	queryResult = queryMysql(query_sql,"crm_mysql")
+	# connection = pymysql.connect(host='localhost'
+ #                           , port=3306
+ #                           , db=dataName
+ #                           , user='root'
+ #                           , passwd='lgc057171'
+ #                           , charset='utf8')
+	connection = pymysql.connect(host='127.0.0.1'
+	                       , port=59068
+	                       , db=dataName
+	                       , user='rw_3fdt9jmiaf7d6'
+	                       , passwd='YQm3GM7d3QYorV9Y'
+	                       , charset='utf8')
+	file = "test.xlsx"
+	writer = pd.ExcelWriter(file)
+	print(queryResult)
+	sql = None
+	for obj in queryResult:
+		sql = query_table_colums.replace("AAAA",dataName).replace("BBBB",obj.get("TABLE_NAME"))
+		data = get_df_from_db_1(sql,connection)
+		df = pd.DataFrame(data)
+		# df.reset_index(drop = True)
+		df.to_excel(excel_writer=writer, sheet_name=obj.get("TABLE_NAME")+"("+obj.get("TABLE_COMMENT")+")",index = False)
+	writer.save()
+	writer.close()
+
+	# dataList = 
+	return queryResult
+        # print(obj)
+
+
+def get_df_from_db_1(sql,connection):
+    return pd.read_sql(sql,connection)
+
+
+
+def write_excel_pd(file, sheet, data):
+    """
+    excel title: name /  age
+        df1 = {
+        'name': [1, 2, 3],
+        'age': [1, 2, 3]
+    }
+    pandas DataFrame  write to excel
+    :param file:  file_path + file_name
+    :param sheet: type：list
+    :param data: type: list  DataFrame
+    :return:
+    """
+    data = [
+
+    ]
+
+    
+    writer = pd.ExcelWriter(file)
+    df = pd.DataFrame(data[i])
+    df.to_excel(excel_writer=writer, sheet_name="tbd")
+    # for i in range(len(sheet)):
+    #     df = pd.DataFrame(data[i])
+    #     df.to_excel(excel_writer=writer, sheet_name=sheet[i])
+    writer.save()
+    writer.close()
+    log.info('写入数据完成！')
+
+# print(create_json_model("crm","tb_organization"))
+
+print(getAllResult("crm_mysql"))
+
+
+# strW =''' 
+# python:mysqldateTime格式数据转为json时失败，解决办法
+# '''
+
+# code_insert_sql = "INSERT INTO code (title,code) VALUES ('AAAA','BBBB')"
+
+# # saveMysql(code_insert_sql.replace("BBBB",strW.replace("'","\\'")))
+# print(code_insert_sql.replace("AAAA",strW.replace("'","\\'")))
+# saveMysql(code_insert_sql.replace("AAAA",strW.replace("'","\\'")))
+
+# print(saveMysql(insertSql))
+#print(queryMysql(querySql))
+# print(saveMysql(updateSql))
