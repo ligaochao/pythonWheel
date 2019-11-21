@@ -1,0 +1,207 @@
+import requests
+import xlrd
+import json
+import xlwt
+from xlrd import open_workbook
+from xlutils.copy import copy
+from tkinter import *
+import tkinter.filedialog
+from tkinter.filedialog import askdirectory
+import easygui as g
+import os
+root = Tk()
+root.title('回归调试接口测试')
+txt = tkinter.Text(root,height = 20,width=20)
+
+
+def xlsx_open(filepath):
+    book = xlrd.open_workbook(filepath)
+    return book
+
+def xlsx_getRow(sheet, row):
+    object = {}
+    object["method"] = sheet.cell_value(row, 2)
+    object["host"] = sheet.cell_value(row, 3)
+    object["path"] = sheet.cell_value(row, 4)
+    object["url"] = object["host"] + object["path"]
+    object["params"] = sheet.cell_value(row, 5)
+    object["header"] = sheet.cell_value(row, 6)
+    object["code"] = sheet.cell_value(row, 7)
+    object["id"] = sheet.cell_value(row, 0)
+    object["expected_code"] = sheet.cell_value(row, 8)
+    if object["header"] == "":
+        object["header"] = None
+    return object
+
+def xlsx_request(object,cookies):
+    strD = ""
+    try:
+        if object["method"] == "post":
+            # print(json.loads(json.dumps(object["params"])))
+            headers = object["header"]
+            strD = json.loads(json.dumps(object["params"]))
+            if object["header"] == None:
+                headers = {'content-type': 'application/json'}
+            # print(11111)
+            response = requests.post(object["url"], data=strD, headers=headers, cookies=cookies)
+            print(response.status_code)
+            strD = response
+            result = response.json()
+            #print(result)
+        elif object["method"] == "get":
+            response = requests.get(object["url"], object["params"], headers=object["header"], cookies=object["cookies"])
+            result = response.json()
+        else:
+            print("Unknown method " + object["method"])
+    except Exception as e:
+        result = {"request_ERROR": str(e)+"---请求响应:"+str(strD.status_code)}
+
+    # print(result)
+    return result
+
+def xlsx_set(sheet, row, col, value, red=False):
+    style = "font:colour_index red;"
+    if red == False:
+        sheet.write(row, col, value)
+    else:
+        sheet.write(row, col, value, xlwt.easyxf(style))
+
+def xlsx_save(book, filepath):
+    book.save(filepath)
+
+def dosheet(action_url,query_id,cookies,brd, bwt, sheetIndex):
+    brd_sheet = brd.sheets()[sheetIndex]
+    bwt_sheet = bwt.get_sheet(sheetIndex)
+    count = brd_sheet.nrows
+
+    for i in range(1, count):
+        object = xlsx_getRow(brd_sheet, i)
+        object["cookies"] = cookies
+        if object["path"].find(action_url)>-1:
+            if object["id"].find(query_id)>-1:
+                #print(object["id"])
+                print("测试进行到"+str(object["id"]))
+                result = xlsx_request(object,cookies)
+                if result != None and str(result).find(object["code"])>-1 and str(result).find(object["expected_code"])>-1 and str(result).find("request_ERROR")==-1:
+                    # print(result)
+                    xlsx_set(bwt_sheet, i, 9, "PASS", False)
+                    xlsx_set(bwt_sheet, i, 10, str(result), False)
+                else:
+                    xlsx_set(bwt_sheet, i, 9, "False", True)
+                    xlsx_set(bwt_sheet, i, 10, str(result), False)
+                # print(object)
+                # print(result)
+                # print(result.get(object["code"]))
+
+        # print(object)
+        # print(i)
+        # return False
+
+        # if result.get(object["code"]) == object["expected_code"]:
+        #     xlsx_set(bwt_sheet, i, 9, "pass", False)
+        #     xlsx_set(bwt_sheet, i, 10, result[object["code"]], False)
+        # else:
+        #     xlsx_set(bwt_sheet, i, 9, "fail", True)
+        #     xlsx_set(bwt_sheet, i, 10, result[object["code"]], False)
+
+# # 打开文件
+# brd = xlsx_open("接口测试.xlsx")
+# action_url = ""
+# query_id = ""
+# # copy文件用于写入结果
+# bwt = copy(brd)
+# dosheet(action_url,query_id,brd, bwt, 0)
+# # 保存
+# xlsx_save(bwt, "用例result.xlsx")
+
+def  getCookie(obj):
+    if obj == None or len(obj) == 0:
+        return None
+    cookies={}#初始化cookies字典变量
+    for line in obj.split(';'):   #按照字符：进行划分读取
+        #其设置为1就会把字符串拆分成2份
+        name,value=line.strip().split('=',1)
+        cookies[name]=value  #为字典cookies添加内容
+    return cookies
+
+def action():
+    fileUrl = str(e_keyword.get(0.0,'end')).strip().replace("\\","/").replace("\n","")
+    action_url = str(e_keyword1.get(0.0,'end')).replace("\n","")
+    query_id = str(e_keyword2.get(0.0,'end')).replace("\n","")
+    cookies_str = str(e_keyword3.get(0.0,'end')).replace("\n","")
+    cookies = getCookie(cookies_str)
+    # print(cookies)
+    if len(query_id) == 0:
+        query_id = ""
+    if len(action_url) == 0:
+        action_url = ""
+    brd = xlsx_open(fileUrl)
+    bwt = copy(brd)
+    sheet_length = len(brd.sheets())
+    sheetNamelist = brd.sheet_names()
+    for obj in range(0,sheet_length):
+        try:
+            dosheet(action_url,query_id,cookies,brd, bwt, obj)
+        except Exception as e:
+            print("【"+str(sheetNamelist[obj])+"】解析错误")
+        
+    try:
+        xlsx_save(bwt, "用例result.xlsx")
+        os.startfile("用例result.xlsx")
+    except Exception as e:
+        g.msgbox("检查一下【用例result.xlsx】是否被wps,office等软件占用")
+        print(str(e))
+    
+    
+
+
+
+def open1():
+    filename = tkinter.filedialog.askopenfilename()
+    if filename != '':
+        # print(filename)
+        e_keyword.delete('0.0',END)
+        e_keyword.insert('0.0',filename)
+    else:
+        print('no')
+
+
+root.geometry("300x200+1500-400")
+# root.geometry("300x400")
+root.resizable(width=True, height=True)
+l_result =Label(root,text='数据文件或内容')
+l_result.grid(row=1,sticky=W)
+e_keyword =Text(root,width = 20,height = 2)
+e_keyword.grid(row=1,column=1,sticky=E)
+# 第二行，密码标签及输入框
+b_login = Button(root,text='查找',command=open1)
+b_login.grid(row=1,column=2)
+# b_login = Button(root,text='数据库')
+# b_login.grid(row=1,column=3)
+
+
+l_result1 =Label(root,text='测试文件路径')
+l_result1.grid(row=2,sticky=W)
+e_keyword1 =Text(root,width = 20,height = 2)
+e_keyword1.grid(row=2,column=1,sticky=E)
+
+
+l_result2 =Label(root,text='id过滤')
+l_result2.grid(row=3,sticky=W)
+e_keyword2 =Text(root,width = 20,height = 2)
+e_keyword2.grid(row=3,column=1,sticky=E)
+
+
+l_result3 =Label(root,text='输入cookies')
+l_result3.grid(row=4,sticky=W)
+e_keyword3 =Text(root,width = 20,height = 2)
+e_keyword3.grid(row=4,column=1,sticky=E)
+
+
+b_login = Button(root,text='开始执行',command=action)
+b_login.grid(row=5,column=1)
+
+
+
+root.wm_attributes('-topmost',1)
+root.mainloop()
