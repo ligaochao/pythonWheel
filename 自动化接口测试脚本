@@ -9,6 +9,7 @@ import tkinter.filedialog
 from tkinter.filedialog import askdirectory
 import easygui as g
 import os
+import traceback
 root = Tk()
 root.title('回归调试接口测试')
 txt = tkinter.Text(root,height = 20,width=20)
@@ -21,17 +22,34 @@ def xlsx_open(filepath):
 def xlsx_getRow(sheet, row):
     object = {}
     object["method"] = sheet.cell_value(row, 2)
-    object["host"] = sheet.cell_value(row, 3)
-    object["path"] = sheet.cell_value(row, 4)
+    object["host"] = sheet.cell_value(row, 3).strip()
+    object["path"] = sheet.cell_value(row, 4).strip()
     object["url"] = object["host"] + object["path"]
     object["params"] = sheet.cell_value(row, 5)
     object["header"] = sheet.cell_value(row, 6)
     object["code"] = sheet.cell_value(row, 7)
     object["id"] = sheet.cell_value(row, 0)
+    object["cookies"] = sheet.cell_value(row, 9)
     object["expected_code"] = sheet.cell_value(row, 8)
     if object["header"] == "":
         object["header"] = None
     return object
+
+def _handle_data(data):
+    print(data.encode('latin1').decode('utf-8'))
+    return data.encode('utf-8').decode('latin1')
+    # 将请求携带参数里面的中文进行处理,data为字典格式
+    # for k, v in data.items():
+    #     try:
+    #         # 匹配出带有汉字的value
+    #         hanzi = re.search(r'[\u4E00-\u9FA5]*', v).group()
+    #         #  匹配到，则替换；未匹配到，不做任何处理
+    #         if hanzi:
+    #             data[k] = hanzi.encode('utf-8').decode('latin1')
+    #     except Exception as f:
+    #         pass
+    # return data
+
 
 def xlsx_request(object,cookies):
     strD = ""
@@ -40,20 +58,27 @@ def xlsx_request(object,cookies):
             # print(json.loads(json.dumps(object["params"])))
             headers = object["header"]
             strD = json.loads(json.dumps(object["params"]))
+            print(strD)
+            print("##############")
             if object["header"] == None:
                 headers = {'content-type': 'application/json'}
-            # print(11111)
-            response = requests.post(object["url"], data=strD, headers=headers, cookies=cookies)
-            print(response.status_code)
+            print(strD.encode('utf-8'))
+            response = requests.post(object["url"], data=strD.encode('utf-8'), headers=headers, cookies=cookies)
+            print(response)
             strD = response
             result = response.json()
-            #print(result)
+            # print(result)
         elif object["method"] == "get":
-            response = requests.get(object["url"], object["params"], headers=object["header"], cookies=object["cookies"])
+            headers = object["header"]
+            strD = json.loads(json.dumps(object["params"]))
+            if object["header"] == None:
+                headers = {'content-type': 'application/json'}
+            response = requests.get(object["url"], object["params"].encode('utf-8'), headers=headers, cookies=cookies)
             result = response.json()
         else:
             print("Unknown method " + object["method"])
     except Exception as e:
+        print(traceback.print_exc())
         result = {"request_ERROR": str(e)+"---请求响应:"+str(strD.status_code)}
 
     # print(result)
@@ -76,7 +101,12 @@ def dosheet(action_url,query_id,cookies,brd, bwt, sheetIndex):
 
     for i in range(1, count):
         object = xlsx_getRow(brd_sheet, i)
-        object["cookies"] = cookies
+        if len(object["cookies"]) < 3:
+            object["cookies"] = cookies
+        else:
+            cookies = str(object["cookies"]).replace("\n","")
+            cookies = getCookie(cookies)
+        print(cookies)
         if object["path"].find(action_url)>-1:
             if object["id"].find(query_id)>-1:
                 #print(object["id"])
@@ -129,7 +159,12 @@ def action():
     action_url = str(e_keyword1.get(0.0,'end')).replace("\n","")
     query_id = str(e_keyword2.get(0.0,'end')).replace("\n","")
     cookies_str = str(e_keyword3.get(0.0,'end')).replace("\n","")
-    cookies = getCookie(cookies_str)
+    cookies = None
+    try:
+        cookies = getCookie(cookies_str)
+    except Exception as e:
+        print(e)
+    
     # print(cookies)
     if len(query_id) == 0:
         query_id = ""
@@ -143,6 +178,7 @@ def action():
         try:
             dosheet(action_url,query_id,cookies,brd, bwt, obj)
         except Exception as e:
+            print(e)
             print("【"+str(sheetNamelist[obj])+"】解析错误")
         
     try:
