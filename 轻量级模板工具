@@ -1,0 +1,680 @@
+from tkinter import *
+import os
+import tkinter.filedialog
+from os import path
+# import windnd
+import json
+from jinja2 import Environment, FileSystemLoader
+import pyperclip
+import pyautogui
+# import pandas as pd
+from tkinter.filedialog import askdirectory
+# from PIL import ImageTk,Image
+import easygui as g
+import pymysql
+import configparser
+import xlrd
+
+
+
+root = Tk()
+root.title('模板生成工具')
+txt = tkinter.Text(root,height = 20,width=20)
+"""
+功能：获取某字符串两子字符串之间的内容
+作者:李高超
+创建日期：2018-07-05 17:22:24
+入参：
+  pendingString：原始字符串
+  startCharacter：开始子字符串
+  endCharacter：结束子字符串
+出参：子字符串之间的内容
+"""
+def  getTheContentBetweenTwoCharacters(pendingString, startCharacter, endCharacter):
+	targetString = ''
+	startPosition = pendingString.find(startCharacter)
+	endPosition = pendingString.find(endCharacter)
+	if startPosition >-1 and endPosition >-1 and startPosition < endPosition:
+		targetString = pendingString[startPosition+1:endPosition]
+	return targetString
+
+
+
+def open1():
+    filename = tkinter.filedialog.askopenfilename()
+    if filename != '':
+        # print(filename)
+        e_keyword.delete('0.0',END)
+        e_keyword.insert('0.0',filename)
+    else:
+        print('no')
+
+
+def open2():
+    filename = tkinter.filedialog.askopenfilename()
+    if filename != '':
+        # print(filename)
+        e_keyword1.delete('0.0',END)
+        e_keyword1.insert('0.0',filename)
+    else:
+        print('no')
+
+def open3():
+    # filename = tkinter.filedialog.askopenfilename()
+    path_ = askdirectory()
+    filename = path_ 
+    if filename != '':
+        # print(filename)
+        e_keyword2.delete(0,END)
+        e_keyword2.insert(0,filename)
+    else:
+        print('no')
+
+#处理excel数据源
+def get_by_excel(filename):
+	data = xlrd.open_workbook(filename)
+	table = data.sheets()[0]
+	l = []
+	for i in range(table.nrows):
+		l.append(table.row_values(i))
+	# print(l)
+	allTitle = l[0]
+	arryList = []
+	index = 0
+	for obj in l:
+		if index != 0:
+			dicd = {}
+			for i in range(0,len(obj)):
+				dicd[allTitle[i]] = obj[i]
+			arryList.append(dicd)
+		index = index + 1
+	return arryList
+
+#处理csv数据源
+def get_by_csv(filename):
+	arryList = []
+	try:
+		with open(filename,"r") as f:
+			index  = 0
+			firstArray = []
+			# print(f)
+			for obj in f:
+				obj = obj.replace("\n","")
+				if index == 0:
+					firstArray = obj.split(",")
+					# print(firstArray)
+				if index != 0:
+					objList = obj.split(",")
+					dicd = {}
+					for i in range(0,len(obj.split(","))):
+						if i < len(firstArray):
+							dicd[firstArray[i]] = obj.split(",")[i]
+					arryList.append(dicd)
+				index = index + 1
+			# print(arryList)
+			return arryList
+	except Exception as e:
+		with open(filename,"r",encoding="utf-8") as f:
+			index  = 0
+			firstArray = []
+			# print(f)
+			for obj in f:
+				obj = obj.replace("\n","")
+				if index == 0:
+					firstArray = obj.split(",")
+					# print(firstArray)
+				if index != 0:
+					objList = obj.split(",")
+					dicd = {}
+					for i in range(0,len(obj.split(","))):
+						if i < len(firstArray):
+							dicd[firstArray[i]] = obj.split(",")[i]
+					arryList.append(dicd)
+				index = index + 1
+			# print(arryList)
+			return arryList
+
+
+
+def get_by_excel_l(filename):
+	data = xlrd.open_workbook(filename)
+	table = data.sheets()[0]
+	l = []
+	for i in range(table.ncols):
+		l.append(table.col_values(i))
+	# print(l)
+	objD = {}
+	for obj in l:
+		objD[obj[0]] = obj[1:]
+	return objD
+
+#处理csv数据源
+def get_by_csv_l(filename):
+	arryList = []
+	try:
+		with open(filename,"r") as f:
+			index  = 0
+			firstArray = []
+			# print(f)
+			dicd = {}
+			for obj in f:
+				obj = obj.replace("\n","")
+				if index == 0:
+					firstArray = obj.split(",")
+					# print(firstArray)
+				if index != 0:
+					objList = obj.split(",")
+					for i in range(0,len(obj.split(","))):
+						if i < len(firstArray):
+							dicd[firstArray[i]].append(obj.split(",")[i])
+				index = index + 1
+			# print(arryList)
+			return dicd
+	except Exception as e:
+		with open(filename,"r",encoding="utf-8") as f:
+			index  = 0
+			firstArray = []
+			# print(f)
+			dicd = {}
+			for obj in f:
+				obj = obj.replace("\n","")
+				if index == 0:
+					firstArray = obj.split(",")
+					for obj1 in firstArray:
+						dicd[obj1] = []
+					# print(dicd)
+				if index != 0:
+					objList = obj.split(",")
+					for i in range(0,len(obj.split(","))):
+						if i < len(firstArray):
+							dicd[firstArray[i]].append(obj.split(",")[i])
+				index = index + 1
+			return dicd
+
+
+#处理txt数据源
+# def  get_by_txt(fileUrlData):
+# 	df = pd.read_csv(open(fileUrlData,encoding = "utf-8"))
+# 	print(df)
+
+
+"""
+方法，下划线转小写
+"""
+def tohump(strD):
+    strResult = ""
+    try:
+	    if strD != "" and strD.find('_')>-1:
+	        strdList = strD.split("_")
+	        for obj in strdList:
+	            if obj != "":
+	                if len(obj) > 1:
+	                    strResult = strResult + obj[0].title()+obj[1:]
+	                else:
+	                    strResult = strResult + obj[0].title()
+	        strResult = strResult[0].lower()+strResult[1:]
+	    elif len(strD) > 1 and strD.find('_')  == -1:
+	        strResult = strD[0].lower()+strD[1:]
+	    elif len(strD) == 1 and strD.find('_')  == -1:
+	        strResult = strD[0].lower()
+	    else:
+	        return strD
+    except Exception as e:
+    	return strD
+
+    return  strResult
+
+
+#取字符串中两个符号之间的东东
+def txt_wrap_by(start_str, end, html):
+	start = html.find(start_str)
+	if start >= 0:
+	    start += len(start_str)
+	    end = html.find(end, start)
+	    if end >= 0:
+	        return html[start:end].strip()
+
+#去掉两个字符之间的数据
+def toJavaType(mysqlType):
+	if mysqlType != None:
+		try:
+			mysqlType = str(mysqlType).replace("（","(").replace("）",")")
+			mysqlType = mysqlType.replace(txt_wrap_by('(',')',mysqlType),"").replace("(","").replace(")","").strip()
+		except Exception as e:
+			print(e)
+		
+	if mysqlType == "varchar":
+	    return "String"
+	elif mysqlType == "int":
+	    return "Integer"
+	elif mysqlType == "decimal":
+	    return "BigDecimal"
+	elif mysqlType == "datetime":
+	    return "Date"
+	else:
+	    return mysqlType
+
+#数组去重
+def  arrayWeightRemoval(strD):
+	# newList = eval(strD)
+	resultList = []
+	for obj in strD:
+		if obj not in resultList:
+			resultList.append(obj)
+	if resultList == []:
+		return ""
+	return str(resultList)
+
+
+def  getSql(modelFile,dataFile,createFile):
+	#这里获取模板文件信息
+	fileUrl = modelFile
+	fileCatalog = "/".join(fileUrl.split("/")[0:len(fileUrl.split("/"))-1])
+	#这里获取数据文件信息
+	fileUrlData = dataFile
+	# print("模板一是："+str(fileUrlData))
+	fileCatalog1 = "/".join(fileUrlData.split("/")[0:len(fileUrlData.split("/"))-1])
+	# print("模板一是1："+str(fileCatalog1))
+	#获取文件后缀名
+	file_suffix_list = fileUrlData.replace(fileCatalog1,"").replace("/","").split(".")
+	file_suffix = file_suffix_list[len(file_suffix_list)-1]
+	#这个是循环变量数组
+	propertys = []
+	#这个是自定义变量数组
+	variables = {}
+	# print("后缀名为"+file_suffix)
+	column_variable = []
+	if file_suffix == "xlsx" or file_suffix == "XLSX":
+		print("进入excel处理流程")
+		propertys = get_by_excel(fileUrlData)
+		column_variable = get_by_excel_l(fileUrlData)
+		print("excel完成")
+	if file_suffix == "csv" or file_suffix == 'txt':
+		print("进入csv处理流程")
+		propertys = get_by_csv(fileUrlData)
+		column_variable = get_by_csv_l(fileUrlData)
+		print("csv完成")
+	# if file_suffix == 'txt':
+	# 	print("进入txt处理流程")
+	# 	propertys = get_by_txt(fileUrlData)
+	# 	column_variable = get_by_txt_l(fileUrlData)
+	# 	print("txt处理流程")
+
+	#这里再新增一些特殊的方法处理，为每一个变量新增一些转换方法
+	newList = []
+	for obj in propertys:
+		arr = obj.keys()
+		objNew = {}
+		for obj1 in arr:
+			# print(obj.get(obj1))
+			if str(obj.get(obj1)).strip() != "nan":
+			#这个保存的是原来的值
+				objNew[str(obj1)] = obj.get(obj1)
+			else:
+				objNew[str(obj1)] = ""
+		newList.append(objNew)
+	# print(newList)
+	propertys =  newList
+
+	new_colum = []
+	#这里转义行变量
+	# print(column_variable)
+	for obj in column_variable:
+		objdict = {}
+		key = obj[0]
+		listD = str(obj[1]).replace("Name: "+str(key)+"","").replace(", dtype: object","").replace(", dtype: object","").split(" ")
+		newD = []
+		for objD in listD:
+			if objD.find("\n")>-1:
+				# print(objD)
+				newD.append("\n".join(objD.split("\n")[0:len(objD.split("\n"))-1]))
+		
+		value = newD
+		objdict[key] = value
+		column_variable = new_colum
+		new_colum.append(objdict)
+	column_variable = new_colum
+	# print(column_variable)
+	# print(fileUrl,fileCatalog)
+	strJson = str(txt.get(0.,"end"))
+	# if file_suffix == "xlsx" 
+	file_separator = None
+	try:
+		variable_information = json.loads(strJson)
+		#获取文件内容的分割符（如果是excel或者sql的话，则不需要指定）
+		file_separator = variable_information['separator']
+		if file_separator != None and file_separator !="None":
+			print("文件分割符"+file_separator)
+		# additional_information = None
+		variables = variable_information
+	except Exception as e:
+		print("11111111"+str(e))
+	# fileName = fileUrlData.replace(fileCatalog1,"").replace("/","").replace("."+file_suffix,"")
+	fileName = ".".join(file_suffix_list[0:len(file_suffix_list)-1])
+	#这里可能存在风险，一般不会有
+	modelFileName = modelFile.split("/")[len(modelFile.split("/"))-1].split(".")[0]
+	index = 0
+	# print(variables)
+	# print("-----"+str(fileName.split("--")))
+	for obj in fileName.split("--"):
+		# print(obj)
+		if obj != None:
+			variables["_"+str(index)] = str(obj)
+		index = index + 1
+
+
+	#这里模板加载位置
+	print("模板是:"+str(fileUrl.replace(fileCatalog,"").replace("/","")))
+	#这里新增各类过滤器
+	#1,获取驼峰数据结构
+	env = Environment(loader = FileSystemLoader(fileCatalog))
+	env.lstrip_blocks = True
+	env.trim_blocks = True
+	env = addfliter(env)
+	
+	template = env.get_template(fileUrl.replace(fileCatalog,"").replace("/",""))
+	# print(propertys)
+
+	content = template.render(lv= propertys,ov = variables,cv = column_variable)
+	if createFile != None and createFile.find("/") > -1:
+		with open(createFile+"/"+fileName.split("--")[0]+"=="+modelFileName,"w",encoding = "utf-8") as f:
+			f.write(content.replace("{ ","{").replace(" }","}"))
+	else:
+		#写入粘贴板
+		pyperclip.copy(content.replace("{ ","{").replace(" }","}"))
+		#提示框，弹出框
+		pyautogui.alert(text='处理成功，ctrl+v获取结果',title='',button='OK') 
+
+
+# 对文件的操作
+def func(ls):
+    e_keyword.delete(0,END)
+    for i in ls:
+        e_keyword.insert("end",i.decode("gbk")+'\n')
+
+def func1(ls):
+    e_keyword1.delete(0,END)
+    for i in ls:
+        e_keyword1.insert("end",i.decode("gbk")+'\n')
+
+   
+def listdir(path,list_name):  #传入存储的list
+    for file in os.listdir(path):
+        file_path = os.path.join(path, file)  
+        if os.path.isdir(file_path):  
+            listdir(file_path, list_name)  
+        else:
+            list_name.append(file_path.replace("\\","/"))
+
+# print(listdir("C:\\Users\\ligc\\Desktop\\脚本\\个人脚本\\个人脚本大整理\\兴趣\\小工具集合", strd))
+# print(strd)
+def  openDB():
+	msg = "请输入数据库连接信息"
+	title = "请输入sql语句"
+	user_info = []
+	#先经过默认配置的信息，然后再考虑手动添加
+
+	config=configparser.ConfigParser()
+	config.read('D:\\jinjia\\connection.ini',encoding = "utf-8")
+	# print(config.sections())
+	result = g.choicebox(msg="请选择默认连接方式，手动输入请点cancel",title="",choices=config.sections())
+	# print(result)
+	if result == None:
+		user_info = g.multenterbox(msg,title,("连接方式","sql语句"))
+	else:
+		user_info.append(config[result]["connection"])
+		user_info.append(config[result]["sql"])
+		
+		print(user_info) 
+	fistD = user_info[0].replace("//","/").split("/")
+	user = fistD[1].split(":")[0]
+	passwd = fistD[1].split(":")[1].split("@")[0]
+	host = fistD[1].split(":")[1].split("@")[1]
+	port = fistD[1].split(":")[2]
+	db = fistD[2].split("?")[0]
+	print(user,passwd,host,port,db)
+	connection = pymysql.connect(host=host
+	                       , port=int(port)
+	                       , db=db
+	                       , user=user
+	                       , passwd=passwd
+	                       , charset='utf8'
+	                       ,use_unicode=True)
+	sql = user_info[1] 
+	# df = pd.read_sql(sql,connection)
+	# df.to_csv(path_or_buf="D:\\jinjia\\data\\DBFile.txt", index=False) # 写入csv文件
+	cursor = connection.cursor()
+	cursor.execute(sql)
+	number = cursor.fetchall()
+	cols = cursor.description
+	col = []
+	for i in cols:
+	    col.append(i[0])
+	data = list(map(list, number))
+	# print(data)
+	# fp = open("D:\\jinjia\\data\\DBFile.txt", "w",encoding="utf-8")
+	# loan_count = 0
+	# for loanNumber in number:
+	# 	loan_count = loan_count+ 1
+	# 	print(str(loanNumber))
+	# 	# fp.write(str(loanNumber) + "\n")
+	# 	# fp.close()
+	cursor.close()
+	connection.close()
+	# fp = open("D:\\jinjia\\data\\DBFile.txt", "w",encoding="utf-8")
+	# loan_count = 0
+	# for loanNumber in number:
+	# 	loan_count = loan_count+ 1
+	# 	print(str(loanNumber))
+	# 	# fp.write(str(loanNumber) + "\n")
+	# 	# fp.close()
+	strd= ",".join(col)+"\n"
+	for obj in data:
+		actList = []
+		for obj1 in obj:
+			if obj1 == None:
+				actList.append("")
+			else:
+				actList.append(str(obj1))
+		# print(",".join(obj))
+		strd = strd + str(",".join(actList))+"\n"
+	with open("D:\\jinjia\\data\\DBFile.txt", "w",encoding="utf-8") as f:
+		f.write(strd)
+
+
+	# print("写入完成,共写入%d条数据！" % loan_count)
+	# e_keyword.delete("")
+	e_keyword.delete('0.0',END)
+	e_keyword.insert('0.0',"D:/jinjia/data/DBFile.txt")
+	# print(df.iteritems())
+
+def main():
+ 	modelFile = str(e_keyword1.get(0.0,'end')).strip().replace("\\","/")
+ 	print(modelFile)
+ 	if modelFile.find("{{")  != -1  or modelFile.find("{%") != -1:
+ 		with open("D:\\jinjia\\model\\modelFile.txt","w",encoding = "utf-8") as f:
+ 			f.write(modelFile)
+ 		modelFile = "D:/jinjia/model/modelFile.txt"
+ 	dataFile = str(e_keyword.get(0.0,'end')).strip().replace("\\","/")
+ 	if dataFile.find(".") == -1 or dataFile.find("/") ==-1:
+ 		with open("D:\\jinjia\\data\\dataFile.txt","w",encoding = "utf-8") as f:
+ 			for index in range(0,5):
+ 				dataFile = dataFile.replace("\t\t","\t")
+ 			dataFile = dataFile.replace("\t",",")
+ 			f.write(dataFile)
+ 		dataFile = "D:/jinjia/data/dataFile.txt"
+ 	createFile = str(e_keyword2.get()).strip().replace("\\","/")
+ 	if createFile.find("/") == -1 and createFile.find("\\") == -1:
+ 		getSql(modelFile,dataFile,None)
+ 	else:
+ 		modelList = []
+ 		try:
+ 			modelCatalog = "/".join(modelFile.split("/")[0:len(modelFile.split("/"))-1])
+ 			listdir(modelCatalog, modelList)
+ 		except Exception as e:
+ 			modelList.append("D:\\jinjia\\model\\modelFile.txt")
+ 			print(e)
+
+ 		dataCatalog = "/".join(dataFile.split("/")[0:len(dataFile.split("/"))-1])
+ 		dataList = []
+ 		listdir(dataCatalog, dataList)
+ 		print(dataList)
+ 		for obj in dataList:
+ 			for obj1 in modelList:
+ 				print(obj,obj1,createFile)
+ 				try:
+ 					getSql(obj1,obj,createFile)
+ 				except Exception as e:
+ 					print(e)
+ 				
+ 		os.startfile(createFile)
+
+def  modelFilter():
+	config=configparser.ConfigParser()
+	config.read('D:\\jinjia\\filterConf.ini',encoding = "utf-8")
+	print(config.sections())
+	result = g.choicebox(msg="请选择默认连接方式，手动输入请点cancel",title="",choices=config.sections())
+	print(result)
+	if result != None:
+		#提示框，弹出框
+		choice = pyautogui.confirm(text=config[result]["explain"],title='查看内容为',buttons=["ok","直接运行","cancel"])
+		# choice = pyautogui.alert(text=config[result]["explain"],title='',button=["cancel","ok"]) 
+		if choice.find("cancel") > -1:
+			modelFilter()
+		if choice.find("直接运行")>-1:
+			#获取粘贴板内容
+			try:
+				sentence = pyperclip.paste()
+				print("获得的变量"+str(sentence))
+				lastR = eval(result)(sentence)
+				pyperclip.copy(lastR )
+				choice = pyautogui.alert(text="执行完成",title='',button="OK") 
+			except Exception as e:
+				choice = pyautogui.alert(text=str(e),title='',button="OK") 
+				# raise e
+		else:
+			pyperclip.copy(result)
+			
+		#写入粘贴板
+		
+
+		# print(choice)
+
+		
+
+		
+# image2 =Image.open(r'D:\\jinjia\\123.gif')
+# background_image = ImageTk.PhotoImage(image2)
+# w = background_image.width()
+# h = background_image.height()
+# root.geometry("300x400")
+# # root.geometry('%dx%d+0+0' % (w,h))
+# background_label = Label(root, image=background_image)
+# background_label.place(x=0, y=0, relwidth=1, relheight=1)
+root.geometry("330x400+1500-400")
+# root.geometry("300x400")
+root.resizable(width=True, height=True)
+l_result =Label(root,text='数据文件或内容')
+l_result.grid(row=1,sticky=W)
+e_keyword =Text(root,width = 20,height = 2)
+e_keyword.grid(row=1,column=1,sticky=E)
+# 第二行，密码标签及输入框
+b_login2 = Button(root,text='查找',command=open1)
+b_login2.grid(row=1,column=2)
+b_login2 = Button(root,text='数据库',command=openDB)
+b_login2.grid(row=1,column=3)
+
+
+
+l_result1 =Label(root,text='模板文件或内容')
+l_result1.grid(row=2,sticky=W)
+e_keyword1 =Text(root,width = 20,height = 2)
+e_keyword1.grid(row=2,column=1,sticky=E)
+# 第二行，密码标签及输入框
+b_login3 = Button(root,text='查找',command=open2)
+b_login3.grid(row=2,column=2)
+b_login3 = Button(root,text='过滤器',command=modelFilter)
+b_login3.grid(row=2,column=3)
+
+
+
+l_result2 =Label(root,text='输出文件夹')
+l_result2.grid(row=3,sticky=W)
+e_keyword2 =Entry(root,width = 20)
+e_keyword2.grid(row=3,column=1,sticky=E)
+# 第二行，密码标签及输入框
+b_login4 = Button(root,text='查找',command=open3)
+b_login4.grid(row=3,column=2)
+
+l_result =Label(root,text='变量定义区')
+l_result.grid(row=4,sticky=W)
+
+txt_default_value = ''' 
+{
+ "separator":",",
+ "自定义键":"自定义值"
+}
+'''
+txt.insert(0.,txt_default_value)
+txt.grid(row=4,column=1)
+b_login3 = Button(root,text='生成结果',command=main)
+b_login3.grid(row=5,column=1)
+
+# windnd.hook_dropfiles(e_keyword.winfo_id(),func)
+# windnd.hook_dropfiles(e_keyword1.winfo_id(),func1)	
+
+#在这边写新的方法
+def  xmlSpecialCharacterConversion(obj):
+	obj = obj.replace("&","&amp;")
+	obj = obj.replace("<","&lt;")
+	obj = obj.replace(">","&gt;")
+	obj = obj.replace('"',"&quot;")
+	obj = obj.replace("'","&apos;")
+	return obj
+#首字母大写
+def firstTitle(obj):
+	try:
+		return obj[0].title()+obj[1:]
+	except Exception as e:
+		pass
+	return obj
+
+#首字母小写
+def firstlower(obj):
+	try:
+		return obj[0].lower()+obj[1:]
+	except Exception as e:
+		pass
+	return obj
+
+
+#在这里添加自定义的过滤器
+
+def  addfliter(env):
+	env.filters['tohump'] = tohump
+	env.filters['toJavaType'] = toJavaType
+	env.filters['arrayWeightRemoval'] = arrayWeightRemoval
+	env.filters['firstTitle'] = firstTitle
+	env.filters['firstlower'] = firstlower
+	return  env
+
+# root.configure(background="black")
+root.wm_attributes('-topmost',1)
+ 
+root.mainloop()
+
+
+
+
+
+# from jinja2 import Environment, FileSystemLoader
+
+# env = Environment(loader = FileSystemLoader("./templates"))
+# template = env.get_template("test.txt")  
+# propertys = []
+# objD = {"name":"123"}
+# propertys.append(objD)
+# content = template.render(propertys = propertys)
+
+# with open('./test.conf','w') as fp:
+# 	fp.write(content)
