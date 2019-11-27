@@ -1,0 +1,333 @@
+import requests
+import xlrd
+import json
+import xlwt
+from xlrd import open_workbook
+from xlutils.copy import copy
+from tkinter import *
+import tkinter.filedialog
+from tkinter.filedialog import askdirectory
+import easygui as g
+import os
+import traceback
+root = Tk()
+root.title('回归调试接口测试')
+txt = tkinter.Text(root,height = 20,width=20)
+
+#https://www.cnblogs.com/minsons/articles/8042101.html
+#python对象与字符串转换
+
+def xlsx_open(filepath):
+    book = xlrd.open_workbook(filepath)
+    return book
+
+def xlsx_getRow(sheet, row):
+    object = {}
+    object["method"] = sheet.cell_value(row, 2)
+    object["host"] = sheet.cell_value(row, 3).strip()
+    object["path"] = sheet.cell_value(row, 4).strip()
+    object["url"] = object["host"] + object["path"]
+    object["params"] = sheet.cell_value(row, 5)
+    object["header"] = sheet.cell_value(row, 6)
+    object["code"] = sheet.cell_value(row, 7)
+    object["id"] = sheet.cell_value(row, 0)
+    object["cookies"] = sheet.cell_value(row, 9)
+    object["expected_code"] = sheet.cell_value(row, 8)
+    if object["header"] == "":
+        object["header"] = None
+    return object
+
+def _handle_data(data):
+    print(data.encode('latin1').decode('utf-8'))
+    return data.encode('utf-8').decode('latin1')
+
+
+def xlsx_request(object,cookies):
+    strD = ""
+    try:
+        if object["method"] == "post":
+            # print(json.loads(json.dumps(object["params"])))
+            headers = object["header"]
+            strD = json.loads(json.dumps(object["params"]))
+            print(strD)
+            print("##############")
+            if object["header"] == None:
+                headers = {'content-type': 'application/json'}
+            print(strD.encode('utf-8'))
+            response = requests.post(object["url"], data=strD.encode('utf-8'), headers=headers, cookies=cookies)
+            print(response)
+            strD = response
+            result = response.json()
+            # print(result)
+        elif object["method"] == "get":
+            headers = object["header"]
+            strD = json.loads(json.dumps(object["params"]))
+            if object["header"] == None:
+                headers = {'content-type': 'application/json'}
+            response = requests.get(object["url"], object["params"].encode('utf-8'), headers=headers, cookies=cookies)
+            result = response.json()
+        else:
+            print("Unknown method " + object["method"])
+    except Exception as e:
+        print(traceback.print_exc())
+        result = {"request_ERROR": str(e)+"---请求响应:"+str(strD.status_code)}
+
+    # print(result)
+    return result
+
+def xlsx_set(sheet, row, col, value, red=False):
+    style = "font:colour_index red;"
+    if red == False:
+        sheet.write(row, col, value)
+    else:
+        sheet.write(row, col, value, xlwt.easyxf(style))
+
+def xlsx_save(book, filepath):
+    book.save(filepath)
+
+def dosheet(action_url,query_id,cookies,brd, bwt, sheetIndex):
+    brd_sheet = brd.sheets()[sheetIndex]
+    bwt_sheet = bwt.get_sheet(sheetIndex)
+    count = brd_sheet.nrows
+
+    for i in range(1, count):
+        object = xlsx_getRow(brd_sheet, i)
+        if len(object["cookies"]) < 3:
+            object["cookies"] = cookies
+        else:
+            cookies = str(object["cookies"]).replace("\n","")
+            cookies = getCookie(cookies)
+        # print(cookies)
+        if object["url"].find(action_url)>-1:
+            if object["id"].find(query_id)>-1:
+                #print(object["id"])
+                print("测试进行到"+str(object["id"]))
+                result = xlsx_request(object,cookies)
+                objd = {}
+                objd["id"] = object["id"]
+                objd["interface_name"] = object["path"]
+                objd["parameter"] = object["params"]
+                
+                if result != None and str(result).find(object["code"])>-1 and str(result).find(object["expected_code"])>-1 and str(result).find("request_ERROR")==-1:
+                    objd["judge"] = "PASS"
+                    objd["request_result"] = result
+                    return objd
+                    # xlsx_set(bwt_sheet, i, 9, "PASS", False)
+                    # xlsx_set(bwt_sheet, i, 10, str(result), False)
+                else:
+                    objd["judge"] = "False"
+                    objd["request_result"] = result
+                    return objd
+                    # xlsx_set(bwt_sheet, i, 9, "False", True)
+                    # xlsx_set(bwt_sheet, i, 10, str(result), False)
+   
+
+def  getCookie(obj):
+    if obj == None or len(obj) == 0:
+        return None
+    cookies={}#初始化cookies字典变量
+    for line in obj.split(';'):   #按照字符：进行划分读取
+        #其设置为1就会把字符串拆分成2份
+        name,value=line.strip().split('=',1)
+        cookies[name]=value  #为字典cookies添加内容
+    return cookies
+
+def action():
+    fileUrl = str(e_keyword.get(0.0,'end')).strip().replace("\\","/").replace("\n","")
+    action_url = str(e_keyword1.get(0.0,'end')).replace("\n","")
+    query_id = str(e_keyword2.get(0.0,'end')).replace("\n","")
+    cookies_str = str(e_keyword3.get(0.0,'end')).replace("\n","")
+    cookies = None
+    try:
+        cookies = getCookie(cookies_str)
+    except Exception as e:
+        print(e)
+    
+    # print(cookies)
+    if len(query_id) == 0:
+        query_id = ""
+    if len(action_url) == 0:
+        action_url = ""
+    brd = xlsx_open(fileUrl)
+    bwt = copy(brd)
+    sheet_length = len(brd.sheets())
+    sheetNamelist = brd.sheet_names()
+    objList = []
+    for obj in range(0,sheet_length):
+        try:
+            objT = dosheet(action_url,query_id,cookies,brd, bwt, obj)
+            print()
+            if objT != None:
+                objList.append(objT)
+        except Exception as e:
+            # print(e)
+            print("【"+str(sheetNamelist[obj])+"】解析错误")
+    # print(objList)
+    getHtml(objList)
+        
+    # try:
+    #     xlsx_save(bwt, "用例result.xlsx")
+    #     os.startfile("用例result.xlsx")
+    # except Exception as e:
+    #     g.msgbox("检查一下【用例result.xlsx】是否被wps,office等软件占用")
+    #     print(str(e))
+
+def  getHtml(d):
+    strd = """
+    <style type="text/css">
+    table.gridtable {
+        font-family: verdana,arial,sans-serif;
+        font-size:11px;
+        color:#333333;
+        border-width: 1px;
+        border-color: #666666;
+        border-collapse: collapse;
+    }
+    table.gridtable th {
+        border-width: 1px;
+        padding: 8px;
+        border-style: solid;
+        border-color: #666666;
+        background-color: #dedede;
+    }
+    table.gridtable td {
+        border-width: 1px;
+        padding: 8px;
+        border-style: solid;
+        border-color: #666666;
+        background-color: #ffffff;
+    }
+
+    .table  tr th, .table  tr td {
+        vertical-align: middle;
+        text-align: center;
+        white-space: nowrap;/*规定段落的文本不进行换行*/
+        overflow: hidden;/*超出隐藏*/
+        text-overflow: ellipsis;/*隐藏的字符用省略号表示  IE*/
+        -moz-text-overflow: ellipsis;/*隐藏的字符用省略号表示  火狐*/
+    }
+     
+    table {
+        table-layout:fixed;/*table的内部布局固定大小，才可以通过td的width控制宽度*/
+        word-wrap:break-word; /*允许长单词换到下一行*/
+    }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <script>
+    function copy(copyTxt)
+    {
+        var createInput = document.createElement('textarea');
+        createInput.value = copyTxt;
+        document.body.appendChild(createInput);
+        createInput.select(); // 选择对象
+        document.execCommand("Copy"); // 执行浏览器复制命令
+        createInput.className = 'createInput';
+        createInput.style.display='none';
+        //alert('复制成功，可以粘贴了！');//没有layui的可以改为alert
+    }
+
+
+
+    $(function () {
+        //$("td").on("click",function() {
+            //console.log(111111)
+            
+        //});
+
+        $("td").dblclick(function(){
+            //alert("这个段落被双击。");
+
+            console.log(22222)
+            console.log(this.style.cssText)
+            if (this.style.cssText != ""){
+                var that = this;
+                var text = $(this).text();
+                //var obt1 = document.getElementById('keyC');
+                //obt1.innerText = text
+                //$("#keyC").val(text)
+                console.log("jinlai1")
+                $(this).html("<pre>"+text+"</pre>")
+                copy(text)
+                this.style.cssText = ""
+            }else{
+                var that = this;
+                var text = $(this).text();
+                $(this).html(text)
+                console.log("jinlai2")
+                this.style.cssText = "max-width: 100px;overflow: hidden; text-overflow:ellipsis;white-space: nowrap"
+                 //$(this).css()
+
+            }
+        });
+    })
+    </script>
+    """
+    strd = strd + '\n<table class="gridtable">'
+    strd = strd + '<tr><th>id</th><th>接口地址</th><th>参数</th><th>断言</th><th>请求结果</th><tr>'
+    for obj in d:
+        try:
+            strd = strd + '<tr><td>'+str(obj.get('id'))+'</td><td>'+str(obj.get('interface_name'))+'</td><td style="max-width: 100px;overflow: hidden; text-overflow:ellipsis;white-space: nowrap" >'+str(obj.get('parameter'))+'</td><td>'+str(obj.get('judge'))+'</td><td  style="max-width: 100px;overflow: hidden; text-overflow:ellipsis;white-space: nowrap">'+json.dumps(obj.get('request_result'), indent=4, ensure_ascii=False)+'</td><tr>'
+        except Exception as e:
+            strd = strd + '<tr><td>'+str(obj.get('id'))+'</td><td>'+str(obj.get('interface_name'))+'</td><td style="max-width: 100px;overflow: hidden; text-overflow:ellipsis;white-space: nowrap" >'+str(obj.get('parameter'))+'</td><td>'+str(obj.get('judge'))+'</td><td>'+str(obj.get('request_result'))+'</td><tr>'
+        
+            
+        
+    # strd = strd + '\n'.join(tds)
+    strd = strd + '</table>'
+    #strd = strd + '<input  id = "keyC" type="text" value="" "style="display:none">'
+    # strd = strd + 
+    with open("test.html","w",encoding="utf-8") as f:
+        f.write(strd)
+    os.startfile("test.html")  
+
+
+
+def open1():
+    filename = tkinter.filedialog.askopenfilename()
+    if filename != '':
+        # print(filename)
+        e_keyword.delete('0.0',END)
+        e_keyword.insert('0.0',filename)
+    else:
+        print('no')
+
+
+root.geometry("300x200+1500-400")
+# root.geometry("300x400")
+root.resizable(width=True, height=True)
+l_result =Label(root,text='数据文件或内容')
+l_result.grid(row=1,sticky=W)
+e_keyword =Text(root,width = 20,height = 2)
+e_keyword.grid(row=1,column=1,sticky=E)
+# 第二行，密码标签及输入框
+b_login = Button(root,text='查找',command=open1)
+b_login.grid(row=1,column=2)
+# b_login = Button(root,text='数据库')
+# b_login.grid(row=1,column=3)
+
+
+l_result1 =Label(root,text='测试文件路径')
+l_result1.grid(row=2,sticky=W)
+e_keyword1 =Text(root,width = 20,height = 2)
+e_keyword1.grid(row=2,column=1,sticky=E)
+
+
+l_result2 =Label(root,text='id过滤')
+l_result2.grid(row=3,sticky=W)
+e_keyword2 =Text(root,width = 20,height = 2)
+e_keyword2.grid(row=3,column=1,sticky=E)
+
+
+l_result3 =Label(root,text='输入cookies')
+l_result3.grid(row=4,sticky=W)
+e_keyword3 =Text(root,width = 20,height = 2)
+e_keyword3.grid(row=4,column=1,sticky=E)
+
+
+b_login = Button(root,text='开始执行',command=action)
+b_login.grid(row=5,column=1)
+
+
+
+root.wm_attributes('-topmost',1)
+root.mainloop()
