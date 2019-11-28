@@ -17,6 +17,8 @@ txt = tkinter.Text(root,height = 20,width=20)
 #https://www.cnblogs.com/minsons/articles/8042101.html
 #python对象与字符串转换
 
+parame_cookie = None
+
 def xlsx_open(filepath):
     book = xlrd.open_workbook(filepath)
     return book
@@ -31,8 +33,8 @@ def xlsx_getRow(sheet, row):
     object["header"] = sheet.cell_value(row, 7)
     object["code"] = sheet.cell_value(row, 8)
     object["id"] = sheet.cell_value(row, 0)
-    object["cookies"] = sheet.cell_value(row, 10)
-    object["expected_code"] = sheet.cell_value(row, 9)
+    object["cookies"] = sheet.cell_value(row, 9)
+    #object["expected_code"] = sheet.cell_value(row, 9)
     if object["header"] == "":
         object["header"] = None
     return object
@@ -41,8 +43,9 @@ def _handle_data(data):
     print(data.encode('latin1').decode('utf-8'))
     return data.encode('utf-8').decode('latin1')
 
-
+# session = requests.Session()
 def xlsx_request(object,cookies):
+    global parame_cookie,session
     strD = ""
     try:
         if object["method"] == "post":
@@ -53,11 +56,18 @@ def xlsx_request(object,cookies):
             print("##############")
             if object["header"] == None:
                 headers = {'content-type': 'application/json'}
-            # print(strD.encode('utf-8'))
+
+            print("当前的cookies是"+str(cookies))
             response = requests.post(object["url"], data=strD.encode('utf-8'), headers=headers, cookies=cookies)
             print(response)
             strD = response
             result = response.json()
+            # try:
+            #     parame_cookie = response.cookies.get_dict()
+            #     print("获得的cookie"+str(response.cookies.get_dict()))
+            # except Exception as e:
+            #     print(e)
+                # pass
             # print(result)
         elif object["method"] == "get":
             headers = object["header"]
@@ -86,6 +96,7 @@ def xlsx_save(book, filepath):
     book.save(filepath)
 
 def dosheet(action_url,query_id,cookies,brd, bwt, sheetIndex):
+    global parame_cookie
     brd_sheet = brd.sheets()[sheetIndex]
     bwt_sheet = bwt.get_sheet(sheetIndex)
     count = brd_sheet.nrows
@@ -93,10 +104,19 @@ def dosheet(action_url,query_id,cookies,brd, bwt, sheetIndex):
     for i in range(1, count):
         object = xlsx_getRow(brd_sheet, i)
         if len(object["cookies"]) < 3:
-            object["cookies"] = cookies
+            if None != cookies and len(cookies) > 1:
+                # print(1111)
+                object["cookies"] = cookies
+            else:
+                # print(2222)
+                object["cookies"] = parame_cookie
+                cookies = parame_cookie
         else:
+            # print(3333)
             cookies = str(object["cookies"]).replace("\n","")
             cookies = getCookie(cookies)
+        if None != cookies and len(cookies) > 1:
+            parame_cookie = cookies
         # print(cookies)
         # print(object["url"])
         print(object["id"])
@@ -111,7 +131,7 @@ def dosheet(action_url,query_id,cookies,brd, bwt, sheetIndex):
                 objd["interface_name"] = object["path"]
                 objd["parameter"] = object["params"]
                 
-                if result != None and str(result).find(object["code"])>-1 and str(result).find(object["expected_code"])>-1 and str(result).find("request_ERROR")==-1:
+                if result != None and str(result).find(object["code"])>-1  and str(result).find("request_ERROR")==-1:
                     objd["judge"] = "PASS"
                     objd["request_result"] = result
                     # return objd
@@ -166,7 +186,7 @@ def action():
             if objT != None:
                 objList = objList + objT
         except Exception as e:
-            # print(e)
+            print(e)
             print("【"+str(sheetNamelist[obj])+"】解析错误")
     # print(objList)
     getHtml(objList)
