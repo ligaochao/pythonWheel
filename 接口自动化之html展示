@@ -96,28 +96,39 @@ def xlsx_save(book, filepath):
     book.save(filepath)
 
 def dosheet(action_url,query_id,cookies,brd, bwt, sheetIndex):
+    #print(cookies)
     global parame_cookie
     brd_sheet = brd.sheets()[sheetIndex]
     bwt_sheet = bwt.get_sheet(sheetIndex)
     count = brd_sheet.nrows
+    idCC = cookies
+    idFalse = False
     arryList = []
     for i in range(1, count):
         object = xlsx_getRow(brd_sheet, i)
-        if len(object["cookies"]) < 3:
+        if None != idCC and len(idCC) > 0:
+            object["cookies"] = idCC
+            idFalse = True
+            #print(object["cookies"])
+        if len(object["cookies"]) < 3 and idFalse == False:
             if None != cookies and len(cookies) > 1:
-                # print(1111)
+                #print(1111)
                 object["cookies"] = cookies
             else:
-                # print(2222)
+                #print(2222)
                 object["cookies"] = parame_cookie
                 cookies = parame_cookie
         else:
-            # print(3333)
-            cookies = str(object["cookies"]).replace("\n","")
-            cookies = getCookie(cookies)
+            #print(3333)
+            if idFalse == False:
+                cookies = str(object["cookies"]).replace("\n","")
+                cookies = getCookie(cookies)
+            else:
+                cookies = object["cookies"]
+
         if None != cookies and len(cookies) > 1:
             parame_cookie = cookies
-        # print(cookies)
+        print(cookies)
         # print(object["url"])
         print(object["id"])
         print(query_id)
@@ -178,11 +189,11 @@ def action():
     bwt = copy(brd)
     sheet_length = len(brd.sheets())
     sheetNamelist = brd.sheet_names()
+    idCookies = cookies
     objList = []
     for obj in range(0,sheet_length):
         try:
-            objT = dosheet(action_url,query_id,cookies,brd, bwt, obj)
-            print()
+            objT = dosheet(action_url,query_id,idCookies,brd, bwt, obj)
             if objT != None:
                 objList = objList + objT
         except Exception as e:
@@ -318,7 +329,7 @@ def open1():
         print('no')
 
 
-root.geometry("300x200+1500-400")
+root.geometry("300x200+1000-400")
 # root.geometry("300x400")
 root.resizable(width=True, height=True)
 l_result =Label(root,text='数据文件或内容')
