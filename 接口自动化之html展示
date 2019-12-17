@@ -10,12 +10,15 @@ from tkinter.filedialog import askdirectory
 import easygui as g
 import os
 import traceback
+import re
 root = Tk()
 root.title('回归调试接口测试')
 txt = tkinter.Text(root,height = 20,width=20)
 
 #https://www.cnblogs.com/minsons/articles/8042101.html
 #python对象与字符串转换
+firstJson = None
+secondJson = None
 
 parame_cookie = None
 
@@ -43,14 +46,38 @@ def _handle_data(data):
     print(data.encode('latin1').decode('utf-8'))
     return data.encode('utf-8').decode('latin1')
 
+def getRealParams(paramStr):
+    global firstJson, secondJson
+    #第一步，提取所有需要填写的变量
+    allN = re.findall(r'\【(.*?)\】',paramStr)
+    if allN != None:
+        for obj in allN:
+            strReal = "【"+obj+"】"
+            try:
+                x = "'"+obj+"':"
+                strReal = firstJson.split(x)[1].split(",")[0].replace("'","").replace("}","").replace("{","").replace("]","").replace("[","")  
+            except Exception as e:
+                print(e)
+            try:
+                x = "'"+obj+"':"
+                strReal = secondJson.split(x)[1].split(",")[0].replace("'","").replace("}","").replace("{","").replace("]","").replace("[","") 
+            except Exception as e:
+                print(e)
+            paramStr = paramStr.replace("【"+obj+"】",strReal)
+    return paramStr
+
+
+
 # session = requests.Session()
 def xlsx_request(object,cookies):
-    global parame_cookie,session
+    global parame_cookie,session,firstJson,secondJson
     strD = ""
     try:
         if object["method"] == "post":
             # print(json.loads(json.dumps(object["params"])))
             headers = object["header"]
+            object["params"] = getRealParams(object["params"])
+            print("处理后的参数是"+object["params"])
             strD = json.loads(json.dumps(object["params"]))
             print(strD)
             print("##############")
@@ -62,13 +89,11 @@ def xlsx_request(object,cookies):
             print(response)
             strD = response
             result = response.json()
-            # try:
-            #     parame_cookie = response.cookies.get_dict()
-            #     print("获得的cookie"+str(response.cookies.get_dict()))
-            # except Exception as e:
-            #     print(e)
-                # pass
-            # print(result)
+            if firstJson != None and secondJson == None:
+                secondJson = str(response.json()).replace(" ","")
+            if firstJson == None:
+                firstJson = str(response.json()).replace(" ","")
+            print("1111111++"+str(response.json()).replace(" ",""))
         elif object["method"] == "get":
             headers = object["header"]
             strD = json.loads(json.dumps(object["params"]))
@@ -128,10 +153,10 @@ def dosheet(action_url,query_id,cookies,brd, bwt, sheetIndex):
 
         if None != cookies and len(cookies) > 1:
             parame_cookie = cookies
-        print(cookies)
+        # print(cookies)
         # print(object["url"])
-        print(object["id"])
-        print(query_id)
+        # print(object["id"])
+        # print(query_id)
         if object["url"].find(action_url)>-1:
             if object["id"].find(query_id)>-1:
                 #print(object["id"])
@@ -170,7 +195,13 @@ def  getCookie(obj):
     return cookies
 
 def action():
+    global firstJson,secondJson
+    #每次进入的时候，重置一下接口结果的缓存
+    firstJson = None
+    secondJson = None
     fileUrl = str(e_keyword.get(0.0,'end')).strip().replace("\\","/").replace("\n","")
+    if None == fileUrl or fileUrl.find("/") == -1 or fileUrl.find("\\") == -1:
+        fileUrl = "C:\\Users\\MAIBENBEN\\Desktop\\python脚本\\接口测试用例.xlsx"
     action_url = str(e_keyword1.get(0.0,'end')).replace("\n","")
     query_id = str(e_keyword2.get(0.0,'end')).replace("\n","")
     cookies_str = str(e_keyword3.get(0.0,'end')).replace("\n","")
