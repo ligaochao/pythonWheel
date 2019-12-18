@@ -1,0 +1,63 @@
+import json
+
+strd= """
+{
+"poolId":"String",
+"cfgName":"String",
+"warnType":0,
+"thresholds":[{
+"pwtId":"String",
+"threshold":0,
+"thresholdUnit":"String",
+"lastWarnTime":"Date",
+"alertFlag":true,
+"alertContent":"String"
+}],
+"personConfigs":[{
+"WeChatGroupId":"String",
+"personName":"String"
+}],
+"tunnelType":0,
+"weChatConfig":{
+"content":"String"
+},
+"thresholdType":0,
+"interval":0,
+"intervalUnit":0,
+"intervalUnitName":"String",
+"warnCount":0,
+"isEnable":true,
+"updateOperator":"String",
+"creator":"String",
+"alertMsg":"String",
+"alertTime":"String",
+"personName":"String"
+}
+"""
+
+
+realObject = json.loads(strd)
+
+def get_dictkeys(dic, find_key,key_value):
+	if isinstance(dic,dict) == False:
+		dic = json.loads(strd)
+	find_value = 'no'
+	for key, value in dic.items():
+	    if key == find_key:
+	        find_value = value
+	        dic[key] = key_value
+	    elif isinstance(value, list):
+	    	for obj in value:
+	    		for key1, value1 in obj.items():
+	    			if key1 == find_key:
+		    			find_value = value1
+		    			obj[key1] = key_value
+	    elif isinstance(value, dict):
+	    	find_value = get_dictkeys(value, find_key,key_value)
+	if find_value == 'no':
+		return 'dict doesnt have this key'
+	else:
+		return find_value
+print (get_dictkeys(realObject, "WeChatGroupId","xxxxx"))
+
+print(realObject)
