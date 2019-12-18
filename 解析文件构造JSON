@@ -1,0 +1,64 @@
+import os
+import re
+
+
+def print_all_file_path(init_file_path):
+	alist = []
+	for root,dirs,files in os.walk(init_file_path):
+		for file in files:
+			alist.append(file)
+			# print(os.path.join(root,file))
+	return alist
+
+def getObjectJson(fileUrl,strContent,allFilelist,flagObjOrList):
+	# print(fileUrl)
+	filepath,fullflname = os.path.split(fileUrl)
+	contentList = []
+	lastFlag = False #这个是完结标识
+	with open(fileUrl,"r+",encoding="utf-8") as f:
+		for obj in f:
+			if obj.find(";")>-1 and obj.find("static") == -1 and obj.find("//") == -1 :
+				if obj.find("private") > -1 or obj.find("protected")>-1:
+					contentList.append(obj)
+	index = 0
+	for obj in contentList:
+		if index == len(contentList)-1:
+			lastFlag = True
+
+		objList = obj.split(" ")
+		reaList = []
+		for obj1 in objList:
+			obj1 = obj1.replace("\t","").replace("\n","").replace(";","")
+			if obj1 != "":
+				reaList.append(obj1)
+		if len(reaList) == 3:
+			if reaList[1] in ["String","Date"]:
+				strContent = strContent + '"'+reaList[2]+'":"'+reaList[1]+'",\n'
+			elif reaList[1] in ["Integer","Long","Boolean"]:
+				strContent = strContent +'"'+reaList[2]+'":'+reaList[1]+',\n'
+			else:
+				if reaList[1]+".java" in allFilelist:
+					strContent = strContent +'"'+reaList[2]+'":{\n'
+					strContent = getObjectJson(filepath+"\\"+reaList[1]+".java",strContent,allFilelist,flagObjOrList)
+				arrAyName = reaList[1].replace("List<","").replace(">","")+".java"
+				if reaList[1].find("List<") > -1  and arrAyName in allFilelist:
+					strContent = strContent +'"'+reaList[2]+'":[{\n'
+					strContent = getObjectJson(filepath+"\\"+arrAyName,strContent,allFilelist,"\n}],\n")
+			if lastFlag:
+				strContent = strContent[0:len(strContent)-2] + flagObjOrList
+		index = index + 1
+	return strContent
+
+fileUrl = "E:\\java\\im\\model-mgr\\src\\main\\java\\com\\bw\\iot\\im\\model\\pojo\\alert\\PhyAlertEntity.java"
+filepath,fullflname = os.path.split(fileUrl)
+strContent = "{\n"
+allFilelist = print_all_file_path(filepath)
+flagObjOrList = "\n},\n"
+
+
+
+strd = getObjectJson(fileUrl,strContent,allFilelist,flagObjOrList)
+strd = strd[0:len(strd)-2]
+strd = strd.replace(":Integer",":0")
+strd = strd.replace(":Boolean",":true")
+print(strd)
