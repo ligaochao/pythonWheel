@@ -1,5 +1,6 @@
 import json
-
+import itertools
+mylist=("".join(x) for x in itertools.product("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",repeat=16))
 strd= """
 {
 "poolId":"String",
@@ -43,23 +44,26 @@ def get_dictkeys(dic, find_key,key_value):
 		dic = json.loads(strd)
 	find_value = 'no'
 	for key, value in dic.items():
-	    if key == find_key:
-	        find_value = value
-	        dic[key] = key_value
-	    elif isinstance(value, list):
-	    	for obj in value:
-	    		for key1, value1 in obj.items():
-	    			if key1 == find_key:
-		    			find_value = value1
-		    			obj[key1] = key_value
-		    		elif isinstance(value1, dict):
-		    			find_value = get_dictkeys(value1, find_key,key_value)
-	    elif isinstance(value, dict):
-	    	find_value = get_dictkeys(value, find_key,key_value)
+		# if value == "String":
+		# 	dic[key] = next(mylist)
+		if key == find_key:
+			find_value = value
+			dic[key] = key_value
+		elif isinstance(value, list):
+			for obj in value:
+				for key1, value1 in obj.items():
+					if key1 == find_key:
+						find_value = value1
+						obj[key1] = key_value
+					elif isinstance(value1, dict):
+						find_value = get_dictkeys(value1, find_key,key_value)
+		elif isinstance(value, dict):
+			find_value = get_dictkeys(value, find_key,key_value)
 	if find_value == 'no':
 		return 'dict doesnt have this key'
 	else:
 		return find_value
+
 print (get_dictkeys(realObject, "WeChatGroupId","xxxxx"))
 
 print(realObject)
