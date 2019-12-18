@@ -1,0 +1,145 @@
+import json
+import itertools
+mylist=("".join(x) for x in itertools.product("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",repeat=5))
+strd= """
+{
+"poolId":"String",
+"cfgName":"String",
+"warnType":0,
+"thresholds":[{
+"pwtId":"String",
+"threshold":0,
+"thresholdUnit":"String",
+"lastWarnTime":"Date",
+"alertFlag":true,
+"alertContent":"String"
+}],
+"personConfigs":[{
+"WeChatGroupId":"String",
+"personName":"String"
+}],
+"tunnelType":0,
+"weChatConfig":{
+"content":"String"
+},
+"thresholdType":0,
+"interval":0,
+"intervalUnit":0,
+"intervalUnitName":"String",
+"warnCount":0,
+"isEnable":true,
+"updateOperator":"String",
+"creator":"String",
+"alertMsg":"String",
+"alertTime":"String",
+"personName":"String"
+}
+"""
+
+
+realObject = json.loads(strd)
+
+def get_dictkeys(dic, find_key,key_value):
+	if isinstance(dic,dict) == False:
+		dic = json.loads(strd)
+	find_value = 'no'
+	for key, value in dic.items():
+		# if value == "String":
+		# 	dic[key] = next(mylist)
+		if key == find_key:
+			find_value = value
+			#这里做一下类型判断，传进来的可能都是字符串，但还是要校验
+			if value == 0:
+				dic[key] = int(key_value)
+			if value == True or value == False:
+				if key_value == "true":
+					dic[key] = True
+				else:
+					dic[key] = False
+			if key_value == "String":
+				dic[key] = next(mylist)
+		elif isinstance(value, list):
+			for obj in value:
+				for key1, value1 in obj.items():
+					if key1 == find_key:
+						find_value = value1
+						obj[key1] = key_value
+					elif isinstance(value1, dict):
+						find_value = get_dictkeys(value1, find_key,key_value)
+		elif isinstance(value, dict):
+			find_value = get_dictkeys(value, find_key,key_value)
+	if find_value == 'no':
+		return 'dict doesnt have this key'
+	else:
+		return find_value
+
+
+
+strdd = """
+{
+"warnType":[0,1]，
+“thresholdType---thresholdUnit”：["0---%","1---MB","1---GB","1---TB"]，
+“interval”：[1]，
+"intervalUnit":["1","2"],
+"intervalUnitName":["分","时"],
+“warnCount”：[1,2],
+"WeChatGroupId":["ligc"],
+"personName":["李高超"],
+"cfgName":["String"],
+"isEnable":[true,false]
+}
+"""
+
+def  getTest(strd):
+	strd = strd.replace("，",",").replace("“",'"').replace("：",":").replace('”','"').replace("【","[").replace("】","]")
+	# print(strd)
+	dic = json.loads(strd)
+	allList = []
+	keyList = []
+	for key, value in dic.items():
+		keyList.append(key)
+		allList.append(value)
+	# print(allList)
+	touList = []
+	getPlans(allList,touList)
+	# print(touList)
+	for obj in touList:
+		testObject = realObject
+		taskList = []
+		if obj != None:
+			for index in range(0,len(obj)):
+				#这里处理一下相关性变脸
+				if keyList[index].find("---")>-1:
+					charVs = keyList[index].split("---")
+					chards = obj[index].split("---")
+					# print(chards)
+					for index1 in range(0,len(charVs)):
+						# print(charVs[index1],chards[index1])
+						get_dictkeys(testObject,charVs[index1],chards[index1])
+				else:
+					# print(keyList[index],obj[index])
+					get_dictkeys(testObject,keyList[index],obj[index])
+				taskList.append(str(keyList[index])+"="+str(obj[index]))
+		noRepeatList = []
+		if str(taskList) not in noRepeatList:
+			noRepeatList.append(str(taskList))
+			print("测试组合为"+str(taskList))	
+			print(json.dumps(testObject))
+			print("------------------------------------------")		
+
+
+
+def getPlans(lis,listResult,jude=True):
+	
+	if jude: lis = [[[i] for i in lis[0]]] + lis[1:]
+	if len(lis) > 2:
+	    for i in lis[0]:
+	        for j in lis[1]:
+	            getPlans([[i + [j]]] + lis[2:],listResult, False)
+	elif len(lis) == 2:
+	    for i in lis[0]:
+	        for j in lis[1]:
+	        	listResult.append(i + [j])
+
+
+getTest(strdd)
