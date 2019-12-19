@@ -1,21 +1,27 @@
 from tkinter import *
-import tkinter  
 import os
 import tkinter.filedialog
 from os import path
-import windnd
+# import windnd
 import json
 from jinja2 import Environment, FileSystemLoader
 import pyperclip
 import pyautogui
 import pandas as pd
 from tkinter.filedialog import askdirectory
-from PIL import ImageTk,Image
+# from PIL import ImageTk,Image
 import easygui as g
 import pymysql
 import configparser
+import linecache
+import difflib
+import sys
+import json
+import itertools
+import calendar;
+import time;
 
-
+mylist=("".join(x) for x in itertools.product("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",repeat=6))
 
 root = Tk()
 root.title('模板生成工具')
@@ -277,7 +283,6 @@ def  getSql(modelFile,dataFile,createFile):
 	env.lstrip_blocks = True
 	env.trim_blocks = True
 	env = addfliter(env)
-	
 	template = env.get_template(fileUrl.replace(fileCatalog,"").replace("/",""))
 	# print(propertys)
 
@@ -287,7 +292,7 @@ def  getSql(modelFile,dataFile,createFile):
 			f.write(content.replace("{ ","{").replace(" }","}"))
 	else:
 		#写入粘贴板
-		pyperclip.copy(content.replace("{ ","{").replace(" }","}"))
+		pyperclip.copy(content.replace("{ ","{").replace(" }","}").replace('@@@@','"').replace("&&&&",","))
 		#提示框，弹出框
 		pyautogui.alert(text='处理成功，ctrl+v获取结果',title='',button='OK') 
 
@@ -362,6 +367,7 @@ def main():
  			f.write(modelFile)
  		modelFile = "D:/jinjia/model/modelFile.txt"
  	dataFile = str(e_keyword.get(0.0,'end')).strip().replace("\\","/")
+ 	dataFile = dataFile.replace('"',"@@@@").replace(",","&&&&")
  	if dataFile.find(".") == -1 or dataFile.find("/") ==-1:
  		with open("D:\\jinjia\\data\\dataFile.txt","w",encoding = "utf-8") as f:
  			for index in range(0,5):
@@ -398,12 +404,20 @@ def main():
 def  modelFilter():
 	config=configparser.ConfigParser()
 	config.read('D:\\jinjia\\filterConf.ini',encoding = "utf-8")
-	print(config.sections())
-	result = g.choicebox(msg="请选择默认连接方式，手动输入请点cancel",title="",choices=config.sections())
+	print(config)
+	aLiLsit =[]
+	# names = []
+	for obj in config.sections():
+		aLiLsit.append(config[obj]["explain"]+"---"+obj)
+		# names.append(obj)
+
+	result = g.choicebox(msg="请选择默认连接方式，手动输入请点cancel",title="",choices=aLiLsit)
 	print(result)
 	if result != None:
 		#提示框，弹出框
-		choice = pyautogui.confirm(text=config[result]["explain"],title='查看内容为',buttons=["ok","直接运行","cancel"])
+		#choice = pyautogui.confirm(text=config[result]["explain"],title='查看内容为',buttons=["ok","直接运行","cancel"])
+		choice = "直接运行"
+		result = result.split("---")[1]
 		# choice = pyautogui.alert(text=config[result]["explain"],title='',button=["cancel","ok"]) 
 		if choice.find("cancel") > -1:
 			modelFilter()
@@ -437,7 +451,7 @@ def  modelFilter():
 # # root.geometry('%dx%d+0+0' % (w,h))
 # background_label = Label(root, image=background_image)
 # background_label.place(x=0, y=0, relwidth=1, relheight=1)
-root.geometry("330x400+1500-400")
+root.geometry("400x600+1500-400")
 # root.geometry("300x400")
 root.resizable(width=True, height=True)
 l_result =Label(root,text='数据文件或内容')
@@ -486,8 +500,8 @@ txt.grid(row=4,column=1)
 b_login3 = Button(root,text='生成结果',command=main)
 b_login3.grid(row=5,column=1)
 
-windnd.hook_dropfiles(e_keyword.winfo_id(),func)
-windnd.hook_dropfiles(e_keyword1.winfo_id(),func1)	
+# windnd.hook_dropfiles(e_keyword.winfo_id(),func)
+# windnd.hook_dropfiles(e_keyword1.winfo_id(),func1)	
 
 #在这边写新的方法
 def  xmlSpecialCharacterConversion(obj):
@@ -497,6 +511,342 @@ def  xmlSpecialCharacterConversion(obj):
 	obj = obj.replace('"',"&quot;")
 	obj = obj.replace("'","&apos;")
 	return obj
+#首字母大写
+def firstTitle(obj):
+	try:
+		return obj[0].title()+obj[1:]
+	except Exception as e:
+		pass
+	return obj
+
+#首字母小写
+def firstlower(obj):
+	try:
+		return obj[0].lower()+obj[1:]
+	except Exception as e:
+		pass
+	return obj
+
+#读取指定行文件
+def get_line_context(file_path, line_number):
+	return linecache.getline(file_path, line_number).strip()
+
+#获取接口的方法
+def  interfaceDecoding(obj):
+	try:
+		#要查找的集合
+		fileList = [
+		  'E:\\java\\iot\\portal-srv\\target\\bwae\\srv-api\\META-INF\\js\\bwaerpc-i.js',
+		  'E:\\java\\im\\resource-mgr\\target\\bwae\\srv-api\\META-INF\js\\bwaerpc-i.js'
+		]
+		
+		for fileUrl in fileList:
+			index = 1
+			with open(fileUrl,"r+",encoding="utf-8") as f:
+				for line in  f:
+					if line != None and line.find(obj)>-1:
+						print(line,index)
+						content = get_line_context(fileUrl,index - 2)
+						print(content)
+						return content 
+					index = index + 1
+		return obj
+	except Exception as e:
+		print(e)
+	return obj
+
+#获取接口的方法
+def  interfaceCoding(obj):
+	try:
+		#要查找的集合
+		fileList = [
+		  'E:\\java\\iot\\portal-srv\\target\\bwae\\srv-api\\META-INF\\js\\bwaerpc-i.js',
+		  'E:\\java\\im\\resource-mgr\\target\\bwae\\srv-api\\META-INF\js\\bwaerpc-i.js'
+		]
+		
+		for fileUrl in fileList:
+			index = 1
+			with open(fileUrl,"r+",encoding="utf-8") as f:
+				for line in  f:
+					if line != None and line.find("."+obj+" =")>-1:
+						print(line,index)
+						content = get_line_context(fileUrl,index + 2)
+						print(content)
+						return content 
+					index = index + 1
+		return obj
+	except Exception as e:
+		print(e)
+	return obj
+#拼接fileHub文件
+def  getFileHub(obj):
+	modelUrl = "https://bwae.bwae.org/filehub/v1/projects/【A】/files/【B】/access?accesstoken=【C】"
+	accessToken = obj.split('"accessToken":')[1].split(",")[0].replace('"',"")
+	fileId_A = obj.split('"fileId":')[1].split(",")[0].replace('"',"").split('/')[0]
+	fileId_B = obj.split('"fileId":')[1].split(",")[0].replace('"',"").split('/')[1]
+	resultUrl = modelUrl.replace("【A】",fileId_A).replace("【B】",fileId_B).replace("【C】",accessToken)
+	return resultUrl
+# print(resultUrl)
+
+#格式化Json
+def  getFormatJson(modelUrl):
+	firstAction = modelUrl.replace("{","{\n")
+	firstAction = firstAction.replace("[","[\n")
+	firstAction = firstAction.replace(",",",\n")
+	firstAction = firstAction.replace("}","\n}")
+	firstAction = firstAction.replace("]","\n]")
+	# print(firstAction)
+	actinSpace = " "
+	index = 0
+	strResult = ""
+	for obj in firstAction.split("\n"):
+		if obj.find("}") > -1 or obj.find("]")> -1:
+			strResult = strResult + actinSpace*(index-2) + obj + "\n"
+		else:
+			strResult = strResult + actinSpace*index + obj + "\n"
+		
+		if obj.find("{")>-1:
+			index = index + 2
+			#actinSpace = actinSpace*index
+		if obj.find("}")>-1:
+			index = index - 2
+	return  strResult
+
+#文件对比层
+def  getFileCompare(obj):
+	print(obj)
+	obj = obj.replace("\r","\n").replace("\t","\n")
+	strConten = ""
+	for t in obj.split("\n"):
+		if t.replace("\n","") != "":
+			strConten = strConten + t+"\n"
+
+	firstA = strConten.split("###")[0]
+	firstB = strConten.split("###")[1]
+	d = difflib.HtmlDiff()
+	text1_lines = firstA.splitlines()
+	text2_lines = firstB.splitlines()
+	stdResult = d.make_file(text1_lines, text2_lines)
+	with open("diff.html","w",encoding="utf-8") as f:
+		f.write(stdResult)
+	os.startfile("diff.html")
+	return stdResult
+
+
+#全部大写
+def getAllBig(obj):
+	try:
+		return obj.upper()
+	except Exception as e:
+		pass
+	return obj
+
+
+#这里把URL的解析放进去
+def getUrlChange(obj):
+	try:
+		if obj.find("\\")>-1:
+			return obj.replace("\\","\\\\")
+	except Exception as e:
+		print(e)
+	return obj
+
+
+def print_all_file_path(init_file_path):
+	alist = []
+	for root,dirs,files in os.walk(init_file_path):
+		for file in files:
+			fileUrl = os.path.join(root,file)
+			if fileUrl.find(".java")>-1:
+					alist.append(fileUrl)
+			# print(os.path.join(root,file))
+	return alist
+
+def getObjectJson(fileUrl,strContent,fileUrlList,fileNameList,flagObjOrList):
+	# print(fileUrl)
+	filepath,fullflname = os.path.split(fileUrl)
+	contentList = []
+	lastFlag = False #这个是完结标识
+	with open(fileUrl,"r+",encoding="utf-8") as f:
+		for obj in f:
+			if obj.find(";")>-1 and obj.find("static") == -1 and obj.find("//") == -1 :
+				if obj.find("private") > -1 or obj.find("protected")>-1:
+					contentList.append(obj)
+	index = 0
+	for obj in contentList:
+		if index == len(contentList)-1:
+			lastFlag = True
+
+		objList = obj.split(" ")
+		reaList = []
+		for obj1 in objList:
+			obj1 = obj1.replace("\t","").replace("\n","").replace(";","")
+			if obj1 != "":
+				reaList.append(obj1)
+		if len(reaList) == 3:
+			if reaList[1] in ["String","Date"]:
+				strContent = strContent + '"'+reaList[2]+'":"'+reaList[1]+'",\n'
+			elif reaList[1] in ["Integer","Long","Boolean"]:
+				strContent = strContent +'"'+reaList[2]+'":'+reaList[1]+',\n'
+			else:
+				arrAyName = reaList[1]+".java" 
+				if reaList[1]+".java" in fileNameList:
+					strContent = strContent +'"'+reaList[2]+'":{\n'
+					strContent = getObjectJson(fileUrlList[fileNameList.index(arrAyName)]+"\\"+arrAyName,strContent,fileUrlList,fileNameList,flagObjOrList)
+				arrAyName = reaList[1].replace("List<","").replace(">","")+".java"
+				if reaList[1].find("List<") > -1  and arrAyName in fileNameList:
+					strContent = strContent +'"'+reaList[2]+'":[{\n'
+					strContent = getObjectJson(fileUrlList[fileNameList.index(arrAyName)]+"\\"+arrAyName,strContent,fileUrlList,fileNameList,"\n}],\n")
+			if lastFlag:
+				strContent = strContent[0:len(strContent)-2] + flagObjOrList
+		index = index + 1
+	return strContent
+
+
+
+#这里根据java文件生成java json对象，用于构建请求体来模拟发送参数
+def getDataJson(fileUrl):
+	filepath,fullflname = os.path.split(fileUrl)
+	if fileUrl.find("\\src\\")> -1:
+		filepath = filepath.split("\\src\\")[0]
+	if fileUrl.find("/src/")> -1:
+		filepath = filepath.split("/src/")[0]
+
+	# print(filepath)
+	fileNameList = []  # 专门记录文件的名字
+	fileUrlList = []  # 专门记录文件的路径
+	strContent = "{\n"
+	allFilelist = print_all_file_path(filepath)
+	# print(allFilelist)
+	for obj in allFilelist:
+		path,name = os.path.split(obj)
+		fileUrlList.append(path)
+		fileNameList.append(name)
+
+	flagObjOrList = "\n},\n"
+
+	strd = getObjectJson(fileUrl,strContent,fileUrlList,fileNameList,flagObjOrList)
+	strd = strd[0:len(strd)-2]
+	strd = strd.replace(":Integer",":0")
+	strd = strd.replace(":Boolean",":true")
+	return strd
+
+
+def get_dictkeys(dic, find_key,key_value):
+	if isinstance(dic,dict) == False:
+		dic = json.loads(strd)
+	find_value = 'no'
+	for key, value in dic.items():
+		# print(key, value)
+		# if key == "lastWarnTime":
+		# 	print("111111111"+value)
+		if value == "Date":
+			dic[key] = ts
+		if key == find_key:
+			find_value = value
+				# print("11111---"+str(key_value)+"---"+str(value))
+			#这里做一下类型判断，传进来的可能都是字符串，但还是要校验
+			if value == 0 or value == 1:
+				dic[key] = int(key_value)
+			elif  value == True or value == False:
+				if find_key == "warnType":
+					print(dic)
+					print("1111"+str(value))
+				if key_value == "true":
+					dic[key] = True
+				else:
+					dic[key] = False
+			if key_value == "String":
+				dic[key] = next(mylist)
+		elif isinstance(value, list):
+			for obj in value:
+				for key1, value1 in obj.items():
+					if key1 == find_key:
+						find_value = value1
+						obj[key1] = key_value
+					elif isinstance(value1, dict):
+						find_value = get_dictkeys(value1, find_key,key_value)
+		elif isinstance(value, dict):
+			find_value = get_dictkeys(value, find_key,key_value)
+	if find_value == 'no':
+		return 'dict doesnt have this key'
+	else:
+		return find_value
+
+
+def  getTest(strd,realObject):
+	"""
+	{% for l in lv %}
+		N--1####AAAA####post####BBBB####CCCC####点击过财务审核####l.参数####None####None####JSESSIONID=DDDD####
+	{% endfor %}
+	"""
+	resultS = ""
+	strd = strd.replace("，",",").replace("“",'"').replace("：",":").replace('”','"').replace("【","[").replace("】","]")
+	# print(strd)
+	dic = json.loads(strd)
+	allList = []
+	keyList = []
+	for key, value in dic.items():
+		keyList.append(key)
+		allList.append(value)
+	# print(allList)
+	touList = []
+	getPlans(allList,touList)
+	# print(touList)
+	for obj in touList:
+		testObject = realObject
+		taskList = []
+		if obj != None:
+			for index in range(0,len(obj)):
+				#这里处理一下相关性变脸
+				if keyList[index].find("---")>-1:
+					charVs = keyList[index].split("---")
+					chards = obj[index].split("---")
+					# print(chards)
+					for index1 in range(0,len(charVs)):
+						# print(charVs[index1],chards[index1])
+						get_dictkeys(testObject,charVs[index1],chards[index1])
+				else:
+					# print(keyList[index],obj[index])
+					get_dictkeys(testObject,keyList[index],obj[index])
+				taskList.append(str(keyList[index])+"="+str(obj[index]))
+		noRepeatList = []
+		resultD = {"alertManageReq":{}
+		}
+		if str(taskList) not in noRepeatList:
+			noRepeatList.append(str(taskList))
+			resultD["alertManageReq"] = testObject
+			resultS = resultS + json.dumps(resultD) + "\n"
+
+	return resultS	
+
+
+
+def getPlans(lis,listResult,jude=True):
+	
+	if jude: lis = [[[i] for i in lis[0]]] + lis[1:]
+	if len(lis) > 2:
+	    for i in lis[0]:
+	        for j in lis[1]:
+	            getPlans([[i + [j]]] + lis[2:],listResult, False)
+	elif len(lis) == 2:
+	    for i in lis[0]:
+	        for j in lis[1]:
+	        	listResult.append(i + [j])
+
+
+#这里生成模拟的测试用例
+def  getTestCases(obj):
+	fileUrl = obj.split("###")[0]
+	data = obj.split("###")[1]
+	# print(fileUrl,data)
+	ts = calendar.timegm(time.gmtime())
+	strd = getDataJson(fileUrl.replace("\r","").replace("\n",""))
+	strd = strd.replace(':"Date',':"'+str(ts)+'')
+	realObject = json.loads(strd)
+	strR = getTest(data,realObject)
+	return strR
+
 
 
 #在这里添加自定义的过滤器
@@ -505,8 +855,19 @@ def  addfliter(env):
 	env.filters['tohump'] = tohump
 	env.filters['toJavaType'] = toJavaType
 	env.filters['arrayWeightRemoval'] = arrayWeightRemoval
+	env.filters['firstTitle'] = firstTitle
+	env.filters['firstlower'] = firstlower
+	env.filters['interfaceDecoding'] = interfaceDecoding
+	env.filters['interfaceCoding'] = interfaceCoding
+	env.filters['getFileHub'] = getFileHub
+	env.filters['getFormatJson'] = getFormatJson
+	env.filters['getFileCompare'] = getFileCompare
+	env.filters['getAllBig'] = getAllBig
+	env.filters['getUrlChange'] = getUrlChange
+	env.filters['getDataJson'] = getDataJson
+	env.filters['getTestCases'] = getTestCases
 	return  env
-
+getUrlChange
 # root.configure(background="black")
 root.wm_attributes('-topmost',1)
  
