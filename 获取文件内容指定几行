@@ -1,0 +1,59 @@
+import queue
+
+def  getFileSpecifiedContent(listFile,keyWord,frontIndex,afterIndex):
+    front = queue.Queue() #前几行用队列保持，后面直接用字符串
+    frontStr = ""
+    afterList  = []
+    #前五行缓存
+    resultList = []
+    for fileUrl in listFile:
+        try:
+            flag = False
+            with open(fileUrl,"r+",encoding="utf-8") as f:
+                for obj in f:
+                    if flag == False:
+                        if front.qsize() >= frontIndex:
+                            front.get()
+                            front.put(obj)
+                        else:
+                            front.put(obj)
+                    if flag:
+                        if len(afterList) <= afterIndex:
+                            afterList.append(obj)
+                        else:
+                            while not front.empty():
+                                frontStr = frontStr + front.get() +  "\n"
+                            objFile = {}
+                            objFile["path"] = fileUrl
+                            objFile["content"] = frontStr + "\n".join(afterList)
+                            resultList.append(objFile)
+                            frontStr = ""
+                            afterList = []
+                            flag = False
+                    if None != obj and obj.find(keyWord)> -1:
+                        flag = True
+                    
+        except Exception as e:
+            print(e)
+        if flag:
+            objFile = {}
+            objFile["path"] = fileUrl
+            while not front.empty():
+                frontStr = frontStr + front.get() +  "\n"
+            objFile["content"] = frontStr + "\n".join(afterList)
+            resultList.append(objFile)
+            frontStr = ""
+            afterList = []
+    return resultList
+    # print(resultList)
+
+
+fileUrl = "E:\\java\\im\\resource-mgr\\target\\bwae\\srv-api\\META-INF\\js\\bwaerpc-i.js"
+fileUrl1 = "C:\\Users\\MAIBENBEN\\Downloads\\data (13)"
+keyWord = "RPCB03C284FAD79BFD2FAF37CAC171164AB"
+listFile = []
+listFile.append(fileUrl)
+listFile.append(fileUrl1)
+afterIndex = 3
+frontIndex = 3
+print(getFileSpecifiedContent(listFile,keyWord,frontIndex,afterIndex))
