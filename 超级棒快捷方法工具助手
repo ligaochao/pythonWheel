@@ -1,0 +1,251 @@
+
+#注意要预先导入大部分的包，这样就可以减缓执行的时间
+
+#!/usr/bin/env python3
+
+import tkinter as tk
+from  tkinter  import ttk
+import os
+import queue
+import configparser
+import pyperclip
+import pyautogui
+import sys
+import linecache
+from tkinter import *
+import os
+import tkinter.filedialog
+from os import path
+# import windnd
+import json
+import pyperclip
+import pyautogui
+from tkinter.filedialog import askdirectory
+# from PIL import ImageTk,Image
+import easygui as g
+import pymysql
+import configparser
+import linecache
+import difflib
+import sys
+import json
+import itertools
+import calendar;
+import time;
+root = tk.Tk()
+
+#固定功能列表
+fixed = ["重载","退出","方法加密","方法解密"]
+
+
+config=configparser.ConfigParser()
+config.read('D:\\jinjia\\functionCon.ini',encoding = "utf-8")
+# print(config)
+func_list =[]
+# names = []
+for obj in config.sections():
+	func_list.append(config[obj]["explain"]+"---"+obj)
+
+# func_list = ["","python","重要网址","java","sql","js","java知识点","html","css","取消","退出"]
+func_list = fixed + func_list
+
+
+#核心方法
+def exec_code(LOC,fun,obj): 
+	# print(strd)
+	strResult = ""
+	LOC = getDecompressionFunction(LOC)
+	exec(LOC)
+	strResult = eval(fun)(obj)
+	return strResult
+
+
+
+def go(*args):   #处理事件，*args表示可变参数
+    # global label,realS
+    result = str(comboxlist.get()).strip()
+    print(result)
+    if result == "方法解密":
+        sentence = pyperclip.paste()
+        sentence = sentence.replace("\r","\n").replace("\n\n","\n")
+        if sentence.find("func=")>-1:
+            sentence = sentence.replace("func=","")
+        lastR = getDecompressionFunction(sentence)
+        print(lastR)
+        pyperclip.copy(lastR)
+        choice = pyautogui.alert(text="执行完成",title='',button="OK") 
+        return;
+    if result != None:
+    	if result == "退出":
+    		sys.exit()
+    	if result == "方法加密":
+    		sentence = pyperclip.paste()
+    		sentence = sentence.replace("\r","\n").replace("\n\n","\n")
+    		lastR = getCompressFunction(sentence)
+    		print(lastR)
+    		pyperclip.copy(lastR)
+    		choice = pyautogui.alert(text="执行完成",title='',button="OK") 
+    		return ;
+
+    	if result == "重载":
+    	  python = sys.executable
+    	  os.execl(python, python, * sys.argv)
+    	choice = "直接运行"
+    	result = result.split("---")[1]
+    	# choice = pyautogui.alert(text=config[result]["explain"],title='',button=["cancel","ok"]) 
+    	if choice.find("cancel") > -1:
+    		modelFilter()
+    	if choice.find("直接运行")>-1:
+    		#获取粘贴板内容
+            try:
+                sentence = pyperclip.paste()
+                LOC = config[result]["func"]
+                print(LOC)
+                resultO = {}
+                lastR = exec_code(LOC,result,sentence)
+                print(lastR)
+                pyperclip.copy(lastR)
+                if len(lastR) > 50:
+                    lastR = lastR[0:48]
+                choice = pyautogui.alert(text="执行完成:\n"+lastR,title='',button="OK") 
+            except Exception as e:
+                choice = pyautogui.alert(text=str(e),title='',button="OK") 
+    			# raise e
+    	else:
+    		pyperclip.copy(result)
+
+
+def on_select(event):
+    comboxlist["values"] = func_list
+    #这里点击则展示全部的信息
+    clickFlag = False
+    content = ""
+    try:
+        content = str(event.widget.get(event.widget.curselection()))
+    except Exception as e:
+        print(e)
+    if content == "":
+        return False
+
+def on_keyrelease(event):
+
+    # get text from entry
+    value = event.widget.get()
+    value = value.strip().lower()
+    # for obj in 
+    print(value)
+    if value == '':
+        comboxlist["values"] = func_list 
+    else:
+        valueList = []
+        for obj in func_list:
+            if obj.find(value)>-1:
+                valueList.append(obj)
+        comboxlist["values"] = fixed + valueList
+
+def query(event):
+	value = event.widget.get()
+	value = value.strip().lower()
+	sentence = value
+	if str(sentence).find("http") >-1 and str(sentence).find(":") >-1 and str(sentence).find("/") >-1:
+		os.startfile(str(sentence).strip())
+	os.startfile("http://www.baidu.com/s?wd="+str(sentence)+"&amp;cl=3&amp;t=12&amp;fr=news")
+	#这里是查询数据库还是查询本地文件待定
+	# os.startfile("http://www.baidu.com/s?wd="+str(sentence)+"&amp;cl=3&amp;t=12&amp;fr=news")
+
+
+def  getFileSpecifiedContent(listFile,keyWord,frontIndex,afterIndex):
+    front = queue.Queue() #前几行用队列保持，后面直接用字符串
+    frontStr = ""
+    afterList  = []
+    #前五行缓存
+    resultList = []
+    for fileUrl in listFile:
+        try:
+            flag = False
+            with open(fileUrl,"r+",encoding="utf-8") as f:
+                for obj in f:
+                    if flag == False:
+                        if front.qsize() >= frontIndex:
+                            front.get()
+                            front.put(obj)
+                        else:
+                            front.put(obj)
+                    if flag:
+                        if len(afterList) <= afterIndex:
+                            afterList.append(obj)
+                        else:
+                            while not front.empty():
+                                frontStr = frontStr + front.get() +  "\n"
+                            objFile = {}
+                            objFile["path"] = fileUrl
+                            objFile["content"] = frontStr + "\n".join(afterList)
+                            resultList.append(objFile)
+                            frontStr = ""
+                            afterList = []
+                            flag = False
+                    if None != obj and obj.find(keyWord)> -1:
+                        flag = True
+                    
+        except Exception as e:
+            print(e)
+        if flag:
+            objFile = {}
+            objFile["path"] = fileUrl
+            while not front.empty():
+                frontStr = frontStr + front.get() +  "\n"
+            objFile["content"] = frontStr + "\n".join(afterList)
+            resultList.append(objFile)
+            frontStr = ""
+            afterList = []
+    return resultList
+
+
+def listdir(path,list_name):  #传入存储的list
+    for file in os.listdir(path):
+        file_path = os.path.join(path, file)  
+        if os.path.isdir(file_path):  
+            listdir(file_path, list_name)  
+        else:
+            list_name.append(file_path.replace("\\","/"))
+ 
+
+#方法加密(方便配置)
+def getCompressFunction(strd):
+    return strd.replace("\n","@@@@")
+
+#方法解密
+def getDecompressionFunction(strd):
+    return strd.replace("@@@@","\n")
+
+
+# fileUrl = "E:\\java\\im\\resource-mgr\\target\\bwae\\srv-api\\META-INF\\js\\bwaerpc-i.js"
+# fileUrl1 = "C:\\Users\\MAIBENBEN\\Downloads\\data (13)"
+# keyWord = "RPCB03C284FAD79BFD2FAF37CAC171164AB"
+# listFile = []
+# listFile.append(fileUrl)
+# listFile.append(fileUrl1)
+# afterIndex = 3
+# frontIndex = 3
+# listdir("E:/java",listFile)
+# print(listFile)
+
+
+
+comvalue=tk.StringVar()#窗体自带的文本，新建一个值
+comboxlist=ttk.Combobox(root,textvariable=comvalue) #初始化
+comboxlist["values"]=func_list
+comboxlist.current(0)  #选择第一个
+comboxlist.bind("<<ComboboxSelected>>",go)  #绑定事件,(下拉列表框被选中时，绑定go()函数)
+comboxlist.bind('<KeyRelease>', on_keyrelease)
+comboxlist.bind("<Return>", query)
+comboxlist.pack()
+
+
+root.geometry("+1200+1")
+root.overrideredirect(True)
+root.wm_attributes('-topmost',1)
+# root.state("zoomed")
+root.mainloop()
+
+#注意定位表没收到的问题
