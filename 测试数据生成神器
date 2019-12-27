@@ -1,0 +1,187 @@
+from pymongo import MongoClient
+import random
+import string
+import re
+import json
+import  pandas  as pd
+from pandas import DataFrame
+import os
+from time import time
+import pyautogui
+import pyperclip
+
+
+
+#替换随机字符串
+def  getRealStr(strd):
+    rexp = "(?<=【)(.*?)(?=】)"
+    result = re.findall(rexp,strd)
+    for obj in result:
+        strd = strd.replace("【"+obj+"】",eval(obj))
+    return strd
+#开始随机替换
+def  getJson(obj):
+	obj = obj.replace("NumberLong(","")
+	obj = obj.replace(")","")
+	obj = obj.replace("NumberInt(","")
+	obj = obj.replace("ISODate(","")
+	obj = obj.replace("NumberDecimal(","")
+	print(obj)
+	return json.loads(obj)
+
+
+def get_excel_title(fileUrlData):
+	df = pd.read_excel(fileUrlData)
+	return df.columns.values
+
+
+
+
+def Str(randomlength):
+  """
+  生成一个指定长度的随机字符串，其中
+  string.digits=0123456789
+  string.ascii_letters=abcdefghigklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
+  """
+  str_list = [random.choice(string.digits + string.ascii_letters) for i in range(randomlength)]
+  random_str = ''.join(str_list)
+  return random_str
+
+def Num(randomlength):
+  """
+  生成一个指定长度的随机字符串，其中
+  string.digits=0123456789
+  string.ascii_letters=abcdefghigklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
+  """
+  str_list = [random.choice(string.digits) for i in range(randomlength)]
+  random_str = ''.join(str_list)
+  return random_str
+
+def Add(obj):
+  """
+  生成一个自增随机数
+  string.digits=0123456789
+  string.ascii_letters=abcdefghigklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
+  """
+  global number
+  strObj = None
+  numObj = None
+  if obj != None:
+  	strObj = obj.rstrip(string.digits)
+  	strdd = obj.replace(strObj,"")
+  	if strdd != None and strdd != "":
+  		numObj = int(strdd)
+  if numObj != None:
+  	numObj = numObj + number
+  	return strObj + str(numObj)
+  return obj
+
+def open1():
+    filename = tkinter.filedialog.askopenfilename()
+    if filename != '':
+        # print(filename)
+        e_keyword.delete('0.0',END)
+        e_keyword.insert('0.0',filename)
+    else:
+        print('no')
+def action():
+  fileUrl = str(e_keyword.get(0.0,'end')).strip().replace("\\","/").replace("\n","")
+  model = str(e_keyword1.get(0.0,'end')).replace("\n","")
+  numberStr = str(e_keyword2.get(0.0,'end')).replace("\n","")
+  # try:
+  total = int(numberStr)
+  main(fileUrl,model,total)
+  pyautogui.alert(text='处理成功，ctrl+v获取结果',title='',button='OK')
+# except Exception as e:
+  pyautogui.alert(text='处理失败\n'+str(e),title='',button='OK')
+
+
+
+
+
+def  main(fileUrl,stdModel,total):
+  global number
+  start = time()
+  #stdModel = "【Add('ligabbb2000000')】---【Num(20)】---【Num(20)】---2/3/4G---MP1---2FF---0.1---珠海市金邦达有限公司------------"
+  #total = 100
+  dbList = []
+  for index in range(0,total):
+  	number = number + 1
+  	oblS = getRealStr(stdModel)
+  	dbList.append(oblS)
+  strResult = ""
+  #这里直接截胡，没有文件，则默认造假数据
+  if fileUrl == None or fileUrl.find("/") == -1:
+    if None != dbList:
+      pyperclip.copy("\n".join(dbList))
+      # pyautogui.alert(text='处理成功，ctrl+v获取结果',title='',button='OK')
+      return
+
+  number = 0
+  totile = get_excel_title(fileUrl)
+  dic1 = {}
+  #初始化
+  index = 0
+  for index in range(0,len(totile)):
+  	dic1[totile[index]] = []
+
+  for obj in dbList:
+    arrList = []
+    if obj.find("---")>-1:
+      for index in range(0,len(obj.split("---"))):
+        if index < len(totile) and dic1[totile[index]] != None:
+          dic1[totile[index]].append(obj.split("---")[index]) 
+  resultFile = os.path.dirname(fileUrl)+"\\"+"result.xlsx"
+  df = pd.DataFrame(dic1)
+  print("第二阶段数据处理与格式转化")
+  df.to_excel(resultFile, index=False)
+  print("第三阶段生成excel完成")
+  # print(os.path.abspath(resultFile))
+  pyperclip.copy(resultFile.replace("/","\\"))
+
+  stop = time()
+  # print("Stop: "+ str(stop))
+  print(str(stop-start) +"秒")
+
+
+# stdModel = "【Add('ligaabb2000000')】---【Num(20)】---【Num(20)】---2/3/4G---MP1---2FF---0.1---珠海市金邦达有限公司------------主卡"
+
+# total = 10000
+number = 0
+
+# main(stdModel,total)
+from tkinter import *
+import tkinter.filedialog
+from tkinter.filedialog import askdirectory
+root = Tk()
+root.title('测试数据')
+txt = tkinter.Text(root,height = 20,width=20)
+
+root.geometry("300x200+1000-400")
+# root.geometry("300x400")
+root.resizable(width=True, height=True)
+l_result =Label(root,text='文件模板')
+l_result.grid(row=1,sticky=W)
+e_keyword =Text(root,width = 20,height = 2)
+e_keyword.grid(row=1,column=1,sticky=E)
+# 第二行，密码标签及输入框
+b_login = Button(root,text='查找',command=open1)
+b_login.grid(row=1,column=2)
+
+l_result1 =Label(root,text='数据模板')
+l_result1.grid(row=2,sticky=W)
+e_keyword1 =Text(root,width = 20,height = 2)
+e_keyword1.grid(row=2,column=1,sticky=E)
+
+
+l_result2 =Label(root,text='生成条数')
+l_result2.grid(row=3,sticky=W)
+e_keyword2 =Text(root,width = 20,height = 2)
+e_keyword2.grid(row=3,column=1,sticky=E)
+
+b_login = Button(root,text='开始执行',command=action)
+b_login.grid(row=5,column=1)
+
+root.wm_attributes('-topmost',1)
+ 
+root.mainloop()
