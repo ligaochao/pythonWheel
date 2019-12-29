@@ -1,0 +1,102 @@
+import os
+def getDiffDump(sourceFileUrl,compareFileUrl,sourceFileList,compareFileList,strResult,level):
+  sourceFilepath,sourceFullflname = os.path.split(sourceFileUrl)
+  level =  level + sourceFullflname.replace(".java","") +"."
+  compareFilepath,compareFullflname = os.path.split(compareFileUrl)
+  sourceList = []
+  compareList = []
+  # print(sourceFileUrl)
+  with open(sourceFileUrl,"r+",encoding="utf-8") as f:
+    for obj in f:
+      if obj.find(";") > -1 and obj.find("/") == -1 and obj.find("import ") == -1 and obj.find("package ") == -1 and obj.find("static ") == -1:
+        if obj.find("public") > -1 or obj.find("private") > -1:
+          sourceList.append(obj)
+  with open(compareFileUrl,"r+",encoding="utf-8") as f:
+    for obj in f:
+      if obj.find(";") > -1 and obj.find("/") == -1 and obj.find("import ") == -1 and obj.find("package ") == -1 and obj.find("static ") == -1:
+        if obj.find("public") > -1 or obj.find("private") > -1:
+          compareList.append(obj)
+  diffList = set(sourceList) - set(compareList)
+  for obj in diffList:
+    strResult = strResult + level + "---"+str(obj).replace("\r","").strip()+"\n"
+  heList = list(set(sourceList).intersection(set(compareList)))  #求交集
+  for obj in heList:
+    obj = obj.replace("\n","").strip()
+    # print(obj)
+    objList = obj.split(" ")
+    # print(len(objList))
+    if len(objList) == 3:
+      # print(22222)
+      sourceFileUrl = ""
+      compareFileUrl = ""
+      if objList[1]  not in  ["final","String","Date","Integer","Long","Boolean","long","Float","Double","int","BigDecimal"]:
+        for obj in sourceFileList:
+          objF = obj.find(objList[1]+".java")
+          listF = obj.find(objList[1].replace("[]","").replace("List<","").replace(">","").strip()+".java")
+          if objF > -1 or listF > -1:
+            sourceFileUrl = obj
+            break
+        for obj in compareFileList:
+          objF = obj.find(objList[1]+".java")
+          listF = obj.find(objList[1].replace("[]","").replace("List<","").replace(">","").strip()+".java")
+          if objF > -1 or listF > -1:
+            compareFileUrl = obj
+            break
+        if sourceFileUrl != "" and compareFileUrl != "":
+          strResult = getDiffDump(sourceFileUrl,compareFileUrl,sourceFileList,compareFileList,strResult,level)
+        elif sourceFileUrl != "" and compareFileUrl == "":
+          print("未找到的资源有"+str(sourceFileUrl))
+
+  return strResult
+
+def print_all_file_path(init_file_path):
+  alist = []
+  for root,dirs,files in os.walk(init_file_path):
+    for file in files:
+      fileUrl = os.path.join(root,file)
+      if fileUrl.find(".java")>-1:
+          alist.append(fileUrl)
+      # print(os.path.join(root,file))
+  return alist
+
+
+
+
+ 
+
+#这里对比的是卡
+#sourceFileUrl = "E:\\java\\im\\model-mgr\\src\\main\\java\\com\\bw\\iot\\im\\model\\pojo\\card\\PhysicalCardEntity.java"
+#compareFileUrl = "E:\\java\\rc\\appoint\\src\\main\\java\\com\\bw\\ae\\ntf_rc\\appoint\\domain\\PhysicalCardEntity.java"
+
+#这里对比的是池子
+# sourceFileUrl = "E:\\java\\im\\model-mgr\\src\\main\\java\\com\\bw\\iot\\im\\model\\pojo\\pool\\PoolEntity.java"
+# compareFileUrl = "E:\\java\\rc\\appoint\\src\\main\\java\\com\\bw\\ae\\ntf_rc\\appoint\\domain\\PoolEntity.java"
+
+compareFileUrl = "E:\\java\\im\\model-mgr\\src\\main\\java\\com\\bw\\iot\\im\\model\\pojo\\pool\\PoolEntity.java"
+sourceFileUrl = "E:\\java\\rc\\appoint\\src\\main\\java\\com\\bw\\ae\\ntf_rc\\appoint\\domain\\PoolEntity.java"
+filepath,fullflname = os.path.split(sourceFileUrl)
+if sourceFileUrl.find("\\src\\")> -1:
+  filepath = filepath.split("\\src\\")[0]
+if sourceFileUrl.find("/src/")> -1:
+  filepath = filepath.split("/src/")[0]
+
+sourceFileList = print_all_file_path(filepath)
+
+filepath,fullflname = os.path.split(compareFileUrl)
+if compareFileUrl.find("\\src\\")> -1:
+  filepath = filepath.split("\\src\\")[0]
+if compareFileUrl.find("/src/")> -1:
+  filepath = filepath.split("/src/")[0]
+compareFileList = print_all_file_path(filepath)
+# print(sourceFileList)
+strResult = ""
+level = ""
+
+# print(getDiffDump(sourceFileUrl,compareFileUrl,sourceFileList,compareFileList,strResult,level))
+# resultD = getDiffDump(sourceFileUrl,compareFileUrl,sourceFileList,compareFileList,strResult,level)
+resultStr = getDiffDump(sourceFileUrl,compareFileUrl,sourceFileList,compareFileList,strResult,level)
+resultList = []
+for obj in resultStr.split("\n"):
+  if obj not in resultList:
+    resultList.append(obj)
+print("\n".join(resultList))
