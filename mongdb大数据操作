@@ -1,0 +1,89 @@
+#!/usr/bin/env python
+#coding=utf-8
+#A System Information Gathering Script
+import json
+import pymongo
+from time import time
+# from cacheout import LFUCache
+# from cacheout import Cache
+# # import time
+# # cache = LFUCache()
+# cache = Cache(maxsize=300000, ttl=300, timer=time, default=None) 
+
+
+start = time()
+
+
+# 将mongo数据转移到mysql
+
+client = pymongo.MongoClient('mongodb://username:pwd@host:port/db')
+db = client["ntf-rc-test20191226"]
+doc = db["tb_cards"]
+
+
+client1 = pymongo.MongoClient('mongodb://username:pwd@host:port/d')
+db1 = client1["im_rc"]
+doc1 = db1["tb_cards_error"]
+
+# cache = CacheManager(stores)
+
+
+def getCache(objCache,objMis,key_word,key_word_1):
+    print("开始缓存新表card")
+    index = 0
+    for i in doc1.find({},{key_word:1,"_id":0,key_word_1:1}).batch_size(1000):
+        index = index + 1
+        # cache.set(i.get("iccid"),1)
+        objCache[i.get(key_word)] = ""
+        objMis[i.get(key_word_1)] = ""
+        if index%10000 == 0:
+            end = time()
+            print("缓存执行进度"+str(index)+"次,执行总时间为："+str(end-start)+"秒")
+            # print("缓存执行进度"+str(index)+"次,执行时间为：",end-start)
+            # print("Runtime is ：",end-start)
+        
+
+
+def chunksize_move(objCache,objMis,key_word,key_word_1):
+    mapCard = {}
+    mapMisn = {}
+    # block = 10000
+    # total = doc.count_documents({})
+    # print(total)
+    # iter_number = total // block
+    # print(iter_number)
+    index = 0
+    for i in doc.find({},{key_word:1,"_id":0}).batch_size(1000):
+        index = index + 1
+        # print(i.get(key_word))
+        if objCache.get(i.get(key_word)) !=None:
+            mapCard[i.get(key_word)] = ""
+        if objCache.get(i.get(key_word_1)) !=None:
+            mapMisn[i.get(key_word_1)] = ""
+        if index%10000 == 0:
+            end = time()
+            print("查询执行进度"+str(index)+"次,执行总时间为："+str(end-start)+"秒")
+    return mapCard,mapMisn
+
+def main(key_word,key_word_1):
+    try:
+        objCache = {}
+        objMis = {}
+        getCache(objCache,objMis,key_word,key_word_1)
+        print("缓存处理完毕")
+        mapCard,mapMisn = chunksize_move(objCache,objMis,key_word,key_word_1)
+        print("数据比较完毕，"+str(key_word)+"重复列表为"+str(len(mapCard)))
+        with open("repeatCard.txt","w",encoding="utf-8") as f:
+            f.write(str(mapCard))
+        with open("repeatMisn.txt","w",encoding="utf-8") as f:
+            f.write(str(mapMisn))
+    except Exception as e:
+        print(e)
+    finally:
+        client.close()
+        client1.close()
+
+
+key_word = "iccid"
+key_word_1 = "msisdn"
+main(key_word,key_word_1)
