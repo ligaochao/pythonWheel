@@ -1,0 +1,69 @@
+import xlrd
+import json
+import pymongo
+import numpy
+import math
+import  pandas  as pd
+import sys
+from time import time
+start = time()
+path = u'F:\\运营商引擎表\\testX.csv'
+# na_vals = ["\\N"," ","","NULL"]
+# df_tmp = []
+# df_train = pd.DataFrame(index=["0"])
+# count = 0
+# for chunk in pd.read_csv(path,header=None,sep=',',chunksize=200000,nrows=10000000,error_bad_lines=False,delimiter="\t",lineterminator="\n",
+#                          keep_default_na=True, na_values=na_vals,encoding="gbk"):
+#     df_tmp.append(chunk[1:])
+#     del chunk
+#     print("the chunk " + str(count) + " has been stored...")
+#     print("the mem-cost is now: ", str(sys.getsizeof(df_tmp)/(1) ), "MB \n")
+#     count += 1
+# print(len(df_tmp))
+# idx = 0
+# for i in range(len(df_tmp)):
+#     tmp = pd.DataFrame(data=df_tmp[idx])
+#     df_train = pd.concat([df_train,tmp], ignore_index=True)
+#     del df_tmp[idx],tmp
+#     print(i)
+#     print("the remaining chunk is: ", count)
+#     print("the frame size is: ", df_train.memory_usage().sum() / (1024 ** 2), "MB")
+#     count -= 1
+
+reader = pd.read_csv(path, encoding='gbk',sep=',',iterator=True)
+
+loop = True
+chunkSize = 1000
+chunks = []
+while loop:
+    try:
+        chunk = reader.get_chunk(chunkSize)
+        data=chunk.ix[:,['分摊后账单（元）',' 分摊前账单（元） ','号码']].values
+        print(data)
+        # print(chunk)
+        # for obj in chunk:
+        # 	print(obj)
+        # break
+        # # chunks.append(chunk)
+    except StopIteration as e:
+        loop = False
+        print ("Iteration is stopped.")
+
+
+df=pd.read_excel('北京电信CMP@阳光加信-1911.xlsx')
+print(df.columns)
+data=df.ix[:,['分摊后账单（元）','分摊前账单（元）','号码']].values#读所有行的title以及data列的值，这里需要嵌套列表
+rowstag = ["ni","er","ex"]
+
+returnData = {}
+index = 0
+for i in range(1, len(data)):
+	index = index + 1
+	# 将字段名和excel数据存储为字典形式，并转换为json格式
+	returnData[i] = json.dumps(dict(zip(rowstag, data[i])))
+	# 通过编解码还原数据
+	returnData[i] = json.loads(returnData[i])
+	# print(returnData[i])
+	if index%10000 == 0:
+		end = time()
+		print("执行进度"+str(index)+"次,执行总时间为："+str(end-start)+"秒")
