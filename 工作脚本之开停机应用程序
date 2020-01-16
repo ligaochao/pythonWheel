@@ -1,0 +1,332 @@
+#coding = utf-8
+from tkinter import *
+from tkinter import StringVar
+import time
+import tkinter.filedialog
+from concurrent.futures import ThreadPoolExecutor
+import  pandas  as pd
+import json
+import requests
+import math
+import os
+import hashlib
+
+class Progress(object):
+    """docstring for Progress"""
+
+    def __init__(self):
+        self.root = Tk()
+        self.root.geometry("350x250")
+        self.root.title('修改卡状态')
+        #总数
+        self.total = 0
+        #多线程计算当前数
+        self.now = 0
+
+        self.var = StringVar()
+        self.var.set("开始")
+        self.filename = None
+        self.labelFile = Label(self.root,text='文件名')
+        self.labelFile.grid(row = 0,column = 0)
+        self.textFile = Entry(self.root)
+        self.textFile.grid(row = 0,column = 1)
+        self.queryFind = Button(self.root,text='查找',command=self.open)
+        self.queryFind.grid(row = 0,column = 2)
+        #默认频率
+        self.eFrequency = StringVar()
+        self.eFrequency.set("5")
+        self.labelFrequency = Label(self.root,text='并发数')
+        self.labelFrequency.grid(row = 1,column = 0)
+        self.textFrequency = Entry(self.root,textvariable = self.eFrequency)
+        self.textFrequency.grid(row = 1,column = 1)
+
+        #默认重复时间间隔
+        self.eInterval = StringVar()
+        self.eInterval.set("1")
+        self.labelInterval = Label(self.root,text='重发时间间隔(秒)')
+        self.labelInterval.grid(row = 2,column = 0)
+        self.textInterval = Entry(self.root,textvariable = self.eInterval)
+        self.textInterval.grid(row = 2,column = 1)
+
+        #默认重发次数
+        self.eCount = StringVar()
+        self.eCount.set("3")
+        self.labelCount = Label(self.root,text='重发次数')
+        self.labelCount.grid(row = 3,column = 0)
+        self.textCount = Entry(self.root,textvariable = self.eCount)
+        self.textCount.grid(row = 3,column = 1)
+
+        #AppId
+        self.labelAppId = Label(self.root,text='AppId')
+        self.labelAppId.grid(row = 4,column = 0)
+        self.textAppId = Entry(self.root)
+        self.textAppId.grid(row = 4,column = 1)
+
+        #AppId
+        self.labelSecretKey = Label(self.root,text='SecretKey')
+        self.labelSecretKey.grid(row = 5,column = 0)
+        self.textSecretKey = Entry(self.root)
+        self.textSecretKey.grid(row = 5,column = 1)
+
+
+        self.button =  Button(self.root,textvariable = self.var,command = self.start, width = 20)
+        self.button.grid(row = 6,column = 1,padx = 5)
+
+        # 创建一个背景色为白色的矩形
+        self.canvas = Canvas(self.root,width = 170,height = 26,bg = "white")
+        # 创建一个矩形外边框（距离左边，距离顶部，矩形宽度，矩形高度），线型宽度，颜色
+        self.out_line = self.canvas.create_rectangle(2,2,180,27,width = 1,outline = "black") 
+        self.canvas.grid(row = 7,column = 1,ipadx = 5)
+
+        self.root.mainloop()
+    def open(self):
+        self.filename = tkinter.filedialog.askopenfilename()
+        print(self.filename)
+        if self.filename != '':
+            # print(filename)
+            # self.textFile.delete('0.0',END)
+            self.textFile.delete(0, END)
+            self.textFile.insert('0',self.filename)
+        else:
+            print('no')
+
+
+    def start(self):
+        try:
+            self.canvas.coords(self.fill_line, (0, 0, 0, 30))
+            self.root.update() 
+        except Exception as e:
+            pass
+            
+        self.fill_line = self.canvas.create_rectangle(2,2,0,27,width = 0,fill = "blue")
+        self.filename = str(self.textFile.get()).strip()
+        print("文件名-->"+str(self.filename))
+        print("频率-->"+str(self.textFrequency.get()))
+        print("重发时间间隔-->"+str(self.textInterval.get()))
+        print("AppId-->"+str(self.textAppId.get()))
+        print("textSecretKey-->"+str(self.textSecretKey.get()))
+        self.frequency = int(str(self.textFrequency.get()).strip())
+        self.AppId = str(self.textAppId.get()).strip()
+        self.SecretKey = str(self.textSecretKey.get()).strip()
+        self.interval = int(str(self.textInterval.get()).strip())
+        self.count = int(str(self.textCount.get()).strip())
+        paramsList = []
+        paramsList.append(self.frequency)
+        paramsList.append(self.interval)
+        paramsList.append(self.AppId)
+        paramsList.append(self.SecretKey)
+        paramsList.append(self.filename)
+        paramsList.append(self.count)
+        if None in paramsList or "" in  paramsList:
+            self.var.set("必填参数不能为空")
+            self.root.update()
+            print("必填参数不能为空")
+            return
+        self.var.set("0%")
+        self.root.update()
+        a = hashlib.md5()
+        a.update(self.SecretKey.encode(encoding='utf-8'))
+        #需要先对密钥进行md5加密
+        self.SecretKey = a.hexdigest()
+        # if None in 
+        self.arrayList = self.getList()
+        if len(self.arrayList) == 0:
+            return
+        self.button.config(state="disable") # 设置按钮只允许点击一次
+        self.total =len(self.arrayList)
+        path,filename = os.path.split(self.filename)
+        print(path+"/",filename)
+        error_file =path+"/error_file.txt"
+        success_file =path+"/success_file.txt"
+        with open(error_file,"w",encoding="utf-8") as f:
+            f.write("iccid---msisdn---imsi---状态---错误信息"+"\n")
+        with open(success_file,"w",encoding="utf-8") as f:
+            f.write("iccid---msisdn---imsi---状态---返回信息"+"\n")
+
+        with ThreadPoolExecutor(max_workers=self.frequency) as executor:
+            result = executor.map(self.post, self.arrayList)
+            f_error_file = open(error_file,"a+",encoding="utf-8")
+            f_success_file = open(success_file,"a+",encoding="utf-8")
+            try:
+                for res in result:
+                    if None != res:
+                        if res.get("flag"):
+                            paramsDict = json.loads(res.get("params"))
+                            iccid = paramsDict.get("iccid")
+                            msisdn = paramsDict.get("msisdn")
+                            imsi = paramsDict.get("imsi")
+                            status = paramsDict.get("status")
+                            f_success_file.write(str(iccid)+"---"+str(msisdn)+"---"+str(imsi)+"---"+str(status)+"---"+str(res.get("msg"))+"\n")
+                        else:
+                            # print(json.loads(res.get("params")))
+                            paramsDict = json.loads(res.get("params"))
+                            iccid = paramsDict.get("iccid")
+                            msisdn = paramsDict.get("msisdn")
+                            imsi = paramsDict.get("imsi")
+                            status = paramsDict.get("status")
+                            f_error_file.write(str(iccid)+"---"+str(msisdn)+"---"+str(imsi)+"---"+str(status)+"---"+str(res.get("msg"))+"\n")
+                    # print(res)
+                    self.now = self.now + 1
+                    if self.now%10 == 0:
+                        print("当前已执行--》"+str(self.now))
+                        self.getProgress()
+                if self.now >= self.total:
+                    self.getProgress()
+                self.now = 0  
+            except Exception as e:
+                print("222"+str(e))
+            finally:
+                f_error_file.close()
+                f_success_file.close()
+                self.total = 0
+                self.now = 0
+                self.button.config(state=ACTIVE) # 恢复按钮可点击次数
+    
+    def  dataHandle(self,params):
+        strUrl = "http://XXXXupdateStatus"
+        strUrlQuery = "http://oXXXXard/basicInfo"
+        strD = json.loads(json.dumps(params))
+        headers = {'content-type': 'application/json'}
+        headers["AppId"] = self.AppId
+        headers["SecretKey"] = self.SecretKey
+        # headers["AppId"] = "6671e021bbd55071916656553252ba43"
+        # headers["SecretKey"] = "9f3d49c76bb0c81ecffa1cddb15e248e"
+        response = requests.post(strUrl, data=strD.encode('utf-8'), headers=headers)
+        if None != response:
+            objDct = response.json()
+            if objDct.get("code") == 200 or objDct.get("code") == "200": #如果返回是正常的
+                return response,strD
+            else:  #如果修改失败，调用查询接口
+                response1 = requests.post(strUrlQuery, data=strD.encode('utf-8'), headers=headers)
+                # print("2222"+str(response1.json()))
+                objQuery = response1.json()
+                if objQuery.get("code") == 200 or objQuery.get("code") == "200": #如果查询返回是正常的
+                    status = objQuery.get("data").get("status")
+                    if params.find('"'+status+'"') > -1:
+                        # print("返回修改是成功的")
+                        return response1,strD
+                    else:
+                        return response,strD
+                else:
+                    return response,strD
+        return response,strD
+
+    def post(self,params):
+        objResult = {}
+        try:
+            for index in range(0,self.count):
+                # print(response.json())
+                response,strD = self.dataHandle(params)
+                if None != response:
+                    objDct = response.json()
+                    if objDct.get("code") == 200 or objDct.get("code") == "200":
+                        objResult["flag"] = True
+                        objResult["msg"] = objDct.get("message")
+                        objResult["params"] = strD
+                        break
+                    else:
+                        if index == self.count - 1:
+                            objResult["flag"] = False
+                            objResult["msg"] = objDct.get("message")
+                            objResult["params"] = strD
+                else:
+                    if index == self.count - 1:
+                        objResult["flag"] = False
+                        objResult["params"] = strD
+                        objResult["msg"] = "未返回响应"
+                time.sleep(self.interval)
+            # print()
+            return objResult
+        except Exception as e:
+            print("111"+str(e))
+            objResult["flag"] = True
+            objResult["msg"] = "请求失败，具体原因看日志"
+            return objResult
+
+    def  getList(self):
+        resultList = []
+        iccidList = []
+        msisdnList = []
+        imsiList = []
+        statusList = []
+
+        paramsModel = '{"iccid":【iccid】,"msisdn":【msisdn】,"status":【status】,"imsi":【imsi】}'
+        df=pd.read_excel(self.textFile.get().strip(),dtype={'iccid':str,'msisdn':str,'imsi':str})
+        try:
+            iccidList = df['iccid'].values
+            msisdnList = df['msisdn'].values
+            imsiList = df['imsi'].values
+            statusList = df['状态'].values
+        except Exception as e:
+            self.var.set("请检查文件列名")
+            self.root.update()
+            return resultList
+        
+        maxN,minN = self.max_min(len(iccidList),len(msisdnList),len(imsiList))
+        print(len(statusList),maxN)
+        if len(statusList) != maxN:
+            self.var.set("状态列长度未保持一致")
+            self.root.update()
+            return []
+
+        for index in range(0,maxN):
+            std = paramsModel
+            if index < len(iccidList):
+                if str(iccidList[index]) != "nan":
+                    std = std.replace("【iccid】",'"'+str(iccidList[index])+'"')
+            if index < len(msisdnList):
+                if str(msisdnList[index]) != "nan":
+                    std = std.replace("【msisdn】",'"'+str(msisdnList[index])+'"')
+            if index < len(imsiList):
+                if str(imsiList[index]) != "nan":
+                    std = std.replace("【imsi】",'"'+str(imsiList[index])+'"')
+            if index < len(statusList):
+                if str(statusList[index]) != "nan":
+                    std = std.replace("【status】",'"'+str(statusList[index])+'"')
+            std = std.replace("【iccid】","null").replace("【msisdn】","null").replace("【imsi】","null").replace("【status】","null")
+            # print(std)
+            resultList.append(std)
+        return resultList
+
+
+
+    def max_min(self,x, y, z):
+        max = min = x
+        if y > max:
+            max = y
+        else:
+            min = y
+        if z > max:
+            max = z
+        else:
+            min = z
+        return (max, min)
+
+
+
+    def  getProgress(self):
+        x = self.total    # 未知变量，可更改
+        # print(p)
+        # n = n+180/x
+        n = (self.now/self.total*180)
+        # 以矩形的长度作为变量值更新
+        self.canvas.coords(self.fill_line, (0, 0, n, 30))
+        if round(self.now/self.total,2)*100 > 100:
+            print(round(self.now/self.total,2)*100)
+        self.var.set(str(int(self.now/self.total*100))+"%")
+        self.root.update()
+
+        # for i in range(x):
+        #     n = n+180/x
+        #     k = k+100/x
+        #     # 以矩形的长度作为变量值更新
+        #     self.canvas.coords(self.fill_line, (0, 0, n, 30))
+        #     if k >= 100:
+        #         self.var.set("100%")
+        #     else:
+        #         self.var.set(str(round(k,1))+"%")
+        #     self.root.update()
+        #     time.sleep(0.01)
+
+if __name__ == '__main__':
+    Progress()
