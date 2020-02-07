@@ -1,0 +1,817 @@
+from graphviz import Source
+# 1.身份认证结果查询接口
+t1="""
+digraph graphname{
+
+    1 [label="客户",fontname="Microsoft YaHei"]
+    subgraph cluster_open{
+      label="ntf-crm\n(open-api)"
+      bgcolor = "mintcream"
+      21 [shape=diamond, label="ICCID,MSISDN不都为空？", 
+              fontname="Microsoft YaHei"]
+      22 [shape=box,label="卡信息查询接口",fontname="Microsoft YaHei"]
+      error21 [shape=box, color="red",label="返回错误信息",fontname="Microsoft YaHei"]
+      23 [shape=diamond, label="卡信息是否存在？", 
+              fontname="Microsoft YaHei"]
+      24 [shape=box,label="根据ICCID,MSISDN查询crm数据库",fontname="Microsoft YaHei"]
+
+      21->22[label="true"];
+      22->23
+      23->24[label="true"];
+      21->error21[label="false"]
+      23->error21[label="false"]
+
+    }
+    subgraph cluster_api{
+      label="ntf-oc\n(api)"
+      bgcolor = "mintcream"
+      31[shape=box,label="api卡信息查询接口",fontname="Microsoft YaHei"]
+    }
+
+    subgraph cluster_querybusiness{
+      label="ntf-oc\n(querybusiness)"
+      bgcolor = "mintcream"
+      41[shape=box,label="运营中心卡信息查询接口",fontname="Microsoft YaHei"]
+    }
+
+   
+    end [label="返回响应信息",fontname="Microsoft YaHei"]
+    1->21;
+    22 -> 31
+    31 -> 22[style = dotted]
+    31 -> 41
+    41 -> 31[style = dotted]
+    24 -> end
+    error21->end
+
+    
+}
+"""
+
+
+#单卡流量限速值查询接口
+t2="""
+digraph graphname{
+
+    1 [label="客户",fontname="Microsoft YaHei"]
+    subgraph cluster_open{
+      label="ntf-crm\n(open-api)"
+      bgcolor = "mintcream"
+      21 [shape=diamond, label="ICCID,MSISDN不都为空？", 
+              fontname="Microsoft YaHei"]
+      22 [shape=box,label="卡信息查询接口",fontname="Microsoft YaHei"]
+      error21 [shape=box, color="red",label="返回错误信息",fontname="Microsoft YaHei"]
+      23 [shape=diamond, label="卡信息是否存在？", 
+              fontname="Microsoft YaHei"]
+      24 [shape=box,label="查询运营商引擎接口",fontname="Microsoft YaHei"]
+
+      21->22[label="true"];
+      22->23
+      23->24[label="true"];
+      21->error21[label="false"]
+      23->error21[label="false"]
+
+    }
+    subgraph cluster_api{
+      label="ntf-oc\n(api)"
+      bgcolor = "mintcream"
+      31[shape=box,label="api卡信息查询接口",fontname="Microsoft YaHei"]
+    }
+
+    subgraph cluster_querybusiness{
+      label="ntf-oc\n(querybusiness)"
+      bgcolor = "mintcream"
+      41[shape=box,label="运营中心卡信息查询接口",fontname="Microsoft YaHei"]
+    }
+
+
+    subgraph cluster_operator{
+      label="ntf-operator\n(gateway)"
+      bgcolor = "mintcream"
+      51[shape=box,label="运营商引擎查询接口",fontname="Microsoft YaHei"]
+    }
+
+   
+    end [label="返回响应信息",fontname="Microsoft YaHei"]
+    1->21;
+    24 ->51[label="true"];
+    22 -> 31
+    31 -> 22[style = dotted]
+    31 -> 41
+    41 -> 31[style = dotted]
+    51 -> 24[style = dotted]
+    24 -> end
+    error21->end
+    
+}
+"""
+
+
+#卡网络信息查询接口
+t3="""
+digraph graphname{
+
+    1 [label="客户",fontname="Microsoft YaHei"]
+    subgraph cluster_open{
+      label="ntf-crm\n(open-api)"
+      bgcolor = "mintcream"
+      21 [shape=diamond, label="ICCID,MSISDN不都为空？", 
+              fontname="Microsoft YaHei"]
+      22 [shape=box,label="卡信息查询接口",fontname="Microsoft YaHei"]
+      error21 [shape=box, color="red",label="返回错误信息",fontname="Microsoft YaHei"]
+      23 [shape=diamond, label="卡信息是否存在？", 
+              fontname="Microsoft YaHei"]
+      24 [shape=box,label="请求api卡网络信息查询接口",fontname="Microsoft YaHei"]
+
+      21->22[label="true"];
+      22->23
+      23->24[label="true"];
+      21->error21[label="false"]
+      23->error21[label="false"]
+
+    }
+    subgraph cluster_api{
+      label="ntf-oc\n(api)"
+      bgcolor = "mintcream"
+      31[shape=box,label="api卡信息查询接口",fontname="Microsoft YaHei"]
+      32[shape=box,label="api卡网络信息查询接口",fontname="Microsoft YaHei"]
+    }
+
+    subgraph cluster_querybusiness{
+      label="ntf-oc\n(querybusiness)"
+      bgcolor = "mintcream"
+      41[shape=box,label="运营中心卡信息查询接口",fontname="Microsoft YaHei"]
+      42[shape=box,label="运营中心卡网络信息查询接口",fontname="Microsoft YaHei"]
+      43 [shape=diamond, label="是电信卡？",fontname="Microsoft YaHei"]
+      44[shape=box,label="调用运营商引擎接口",fontname="Microsoft YaHei"]
+      error41 [shape=box, color="red",label="返回错误信息",fontname="Microsoft YaHei"]
+      42 -> 43
+      43 -> 44[label="true"]
+      43 -> error41[label="false"]
+      error41 -> 42[style = dotted]
+
+
+    }
+
+
+    subgraph cluster_operator{
+      label="ntf-operator\n(gateway)"
+      bgcolor = "mintcream"
+      51[shape=box,label="运营商引擎查询接口",fontname="Microsoft YaHei"]
+    }
+
+   
+    end [label="返回响应信息",fontname="Microsoft YaHei"]
+    1->21;
+    24 ->32
+    32 ->24[style = dotted]
+    32 ->42
+    42->32[style = dotted]
+    44->51
+    51->44[style = dotted]
+    22 -> 31
+    31 -> 22[style = dotted]
+    31 -> 41
+    41 -> 31[style = dotted]
+    //51->24[style = dotted]
+    24 -> end
+    error21->end
+    
+}
+"""
+
+
+#单卡停开机接口
+t4="""
+digraph graphname{
+
+    1 [label="客户",fontname="Microsoft YaHei"]
+    subgraph cluster_open{
+      label="ntf-crm\n(open-api)"
+      bgcolor = "mintcream"
+      21 [shape=diamond, label="ICCID,MSISDN不都为空？", 
+              fontname="Microsoft YaHei"]
+      22 [shape=box,label="卡信息查询接口",fontname="Microsoft YaHei"]
+      error21 [shape=box, color="red",label="返回错误信息",fontname="Microsoft YaHei"]
+      23 [shape=diamond, label="卡信息是否存在？", fontname="Microsoft YaHei"]
+      24 [shape=box,label="请求api办理接口",fontname="Microsoft YaHei"]
+
+      231 [shape=box,label="根据请求体查找用户信息",fontname="Microsoft YaHei"]
+      232 [shape=diamond, label="都存在有效的orgId或customerId？", fontname="Microsoft YaHei"]
+      231 -> 232 [label="不为空循环比较orgId和customerId",fontname="Microsoft YaHei"]
+      232 -> 24[label="true"]
+      232 -> error21[label="false"]
+      21->22[label="true"];
+      22->23
+      23->231[label="true"];
+      21->error21[label="false"]
+      23->error21[label="false"]
+      231 -> error21 [label="为空抛出异常",fontname="Microsoft YaHei"]
+
+    }
+    subgraph cluster_api{
+      label="ntf-oc\n(api)"
+      bgcolor = "mintcream"
+      31[shape=box,label="api卡信息查询接口",fontname="Microsoft YaHei"]
+      32[shape=box,label="api单卡停开机接口",fontname="Microsoft YaHei"]
+    }
+
+    subgraph cluster_querybusiness{
+      label="ntf-oc\n(querybusiness)"
+      bgcolor = "mintcream"
+      41[shape=box,label="运营中心卡信息查询接口",fontname="Microsoft YaHei"]
+      42[shape=box,label="运营中心单卡停开机接口",fontname="Microsoft YaHei"]
+      43[shape=box,label="925卡开机",fontname="Microsoft YaHei"]
+      44[shape=box,label="925卡停机",fontname="Microsoft YaHei"]
+      45[shape=box,label="转售卡开机",fontname="Microsoft YaHei"]
+      46[shape=box,label="转售卡停机",fontname="Microsoft YaHei"]
+      42 -> 43
+      42 -> 44
+      42 -> 45
+      42 -> 46
+      46 -> 42[style = dotted]
+      45 -> 42[style = dotted]
+      44 -> 42[style = dotted]
+      43 -> 42[style = dotted]
+    }
+
+
+    subgraph cluster_operator{
+      label="ntf-operator\n(gateway)"
+      bgcolor = "mintcream"
+      51[shape=box,label="运营商引擎办理接口",fontname="Microsoft YaHei"]
+    }
+
+
+    subgraph cluster_flowfeectr{
+      label="ntf-oc\n(flowfeectr)"
+      bgcolor = "mintcream"
+      61[shape=box,label="flowfeectr办理接口",fontname="Microsoft YaHei"]
+    }
+
+    subgraph cluster_srm{
+      label="ntf-oc\n(srm)"
+      bgcolor = "mintcream"
+      71[shape=box,label="srm办理接口",fontname="Microsoft YaHei"]
+    }
+
+    subgraph cluster_srm{
+      label="ntf-oc\n(srm)"
+      bgcolor = "mintcream"
+      71[shape=box,label="srm办理接口",fontname="Microsoft YaHei"]
+    }
+    end [label="返回响应信息",fontname="Microsoft YaHei"]
+
+    
+    43 -> 61
+    44 -> 71
+    45 -> 51
+   
+    46 -> 51
+    51 -> 46[style = dotted]
+    51 -> 45[style = dotted]
+    71 -> 44[style = dotted]
+    61 -> 43[style = dotted]
+
+    1->21;
+    24 ->32;
+    32 -> 24[style = dotted]
+    32 -> 42
+    42 -> 32[style = dotted]
+    22 -> 31
+    31 -> 22[style = dotted]
+    31 -> 41
+    41 -> 31[style = dotted]
+    //51 -> 24[style = dotted]
+    24 -> end
+    error21->end
+    
+}
+"""
+
+
+
+#机卡关系配置接口
+t5="""
+digraph graphname{
+
+    1 [label="客户",fontname="Microsoft YaHei"]
+    subgraph cluster_open{
+      label="ntf-crm\n(open-api)"
+      bgcolor = "mintcream"
+      21 [shape=diamond, label="ICCID,MSISDN不都为空？", 
+              fontname="Microsoft YaHei"]
+      22 [shape=box,label="卡信息查询接口",fontname="Microsoft YaHei"]
+      error21 [shape=box, color="red",label="返回错误信息",fontname="Microsoft YaHei"]
+      23 [shape=diamond, label="卡信息是否存在？", 
+              fontname="Microsoft YaHei"]
+      24 [shape=box,label="请求运营商引擎接口",fontname="Microsoft YaHei"]
+
+      21->22[label="true"];
+      22->23
+      23->24[label="true"];
+      21->error21[label="false"]
+      23->error21[label="false"]
+
+    }
+    subgraph cluster_api{
+      label="ntf-oc\n(api)"
+      bgcolor = "mintcream"
+      31[shape=box,label="api卡信息查询接口",fontname="Microsoft YaHei"]
+    }
+
+    subgraph cluster_querybusiness{
+      label="ntf-oc\n(querybusiness)"
+      bgcolor = "mintcream"
+      41[shape=box,label="运营中心卡信息查询接口",fontname="Microsoft YaHei"]
+    }
+
+
+    subgraph cluster_operator{
+      label="ntf-operator\n(gateway)"
+      bgcolor = "mintcream"
+      51[shape=box,label="运营商引擎办理接口",fontname="Microsoft YaHei"]
+    }
+
+   
+    end [label="返回响应信息",fontname="Microsoft YaHei"]
+    1->21;
+    24 ->51
+    22 -> 31
+    31 -> 22[style = dotted]
+    31 -> 41
+    41 -> 31[style = dotted]
+    51 -> 24[style = dotted]
+    24 -> end
+    error21->end
+    
+}
+"""
+
+
+
+#单卡达量断网阈值设置接口
+t6="""
+digraph graphname{
+
+    1 [label="客户",fontname="Microsoft YaHei"]
+    subgraph cluster_open{
+      label="ntf-crm\n(open-api)"
+      bgcolor = "mintcream"
+      21 [shape=diamond, label="ICCID,MSISDN不都为空？", 
+              fontname="Microsoft YaHei"]
+      22 [shape=box,label="卡信息查询接口",fontname="Microsoft YaHei"]
+      error21 [shape=box, color="red",label="返回错误信息",fontname="Microsoft YaHei"]
+      23 [shape=diamond, label="卡信息是否存在？", 
+              fontname="Microsoft YaHei"]
+      24 [shape=box,label="请求api办理接口",fontname="Microsoft YaHei"]
+
+      21->22[label="true"];
+      22->23
+      23->24[label="true"];
+      21->error21[label="false"]
+      23->error21[label="false"]
+
+    }
+    subgraph cluster_api{
+      label="ntf-oc\n(api)"
+      bgcolor = "mintcream"
+      31[shape=box,label="api卡信息查询接口",fontname="Microsoft YaHei"]
+      32[shape=box,label="单卡信息查询",fontname="Microsoft YaHei"]
+      321[shape=diamond,label="运营中心存在该卡？",fontname="Microsoft YaHei"]
+      322[shape=diamond,label="是DCP卡？",fontname="Microsoft YaHei"]
+      error31 [shape=box, color="red",label="返回错误信息",fontname="Microsoft YaHei"]
+      33[shape=box,label="请求flowfeectr办理接口",fontname="Microsoft YaHei"]
+      32 -> 321
+      321 ->322[label="true"]
+      321 ->error31[label="false"]
+      322 ->33[label="true"]
+      322 ->error31[label="false"]
+      //32 -> 33
+      33 -> 32[style = dotted]
+      error31 ->32[style = dotted]
+    }
+
+    subgraph cluster_querybusiness{
+      label="ntf-oc\n(querybusiness)"
+      bgcolor = "mintcream"
+      41[shape=box,label="运营中心卡信息查询接口",fontname="Microsoft YaHei"]
+      42[shape=box,label="运营中心单卡查询接口",fontname="Microsoft YaHei"]
+
+    }
+
+
+
+    subgraph cluster_flowfeectr{
+      label="ntf-oc\n(flowfeectr)"
+      bgcolor = "mintcream"
+      61[shape=box,label="flowfeectr办理接口",fontname="Microsoft YaHei"]
+    }
+
+
+    subgraph cluster_flowfeecore{
+      label="ntf-oc\n(flowfeecore)"
+      bgcolor = "mintcream"
+      71[shape=box,label="flowfeecore办理接口",fontname="Microsoft YaHei"]
+    }
+
+   
+    end [label="返回响应信息",fontname="Microsoft YaHei"]
+    1->21;
+    24 ->32
+    32 ->24[style = dotted]
+    32 -> 42
+    33 ->61
+    61 ->33[style = dotted]
+    61->71
+    71->61[style = dotted]
+
+    42 -> 32[style = dotted]
+    22 -> 31
+    31 -> 22[style = dotted]
+    31 -> 41
+    41 -> 31[style = dotted]
+    //51 -> 24[style = dotted]
+    24 -> end
+    error21->end
+    
+}
+"""
+
+
+
+
+#单张卡开断网
+t7="""
+digraph graphname{
+
+    1 [label="客户",fontname="Microsoft YaHei"]
+    subgraph cluster_open{
+      label="ntf-crm\n(open-api)"
+      bgcolor = "mintcream"
+      21 [shape=diamond, label="ICCID,MSISDN不都为空？", 
+              fontname="Microsoft YaHei"]
+      22 [shape=box,label="卡信息查询接口",fontname="Microsoft YaHei"]
+      error21 [shape=box, color="red",label="返回错误信息",fontname="Microsoft YaHei"]
+      23 [shape=diamond, label="卡信息是否存在？", fontname="Microsoft YaHei"]
+      24 [shape=box,label="请求api办理接口",fontname="Microsoft YaHei"]
+
+      231 [shape=box,label="根据请求体查找用户信息",fontname="Microsoft YaHei"]
+      232 [shape=diamond, label="都存在有效的orgId或customerId？", fontname="Microsoft YaHei"]
+      231 -> 232 [label="不为空循环比较orgId和customerId",fontname="Microsoft YaHei"]
+      232 -> 24[label="true"]
+      232 -> error21[label="false"]
+      21->22[label="true"];
+      22->23
+      23->231[label="true"];
+      21->error21[label="false"]
+      23->error21[label="false"]
+      231 -> error21 [label="为空抛出异常",fontname="Microsoft YaHei"]
+
+    }
+    subgraph cluster_api{
+      label="ntf-oc\n(api)"
+      bgcolor = "mintcream"
+      31[shape=box,label="api卡信息查询接口",fontname="Microsoft YaHei"]
+      32[shape=box,label="api单卡开断网接口",fontname="Microsoft YaHei"]
+    }
+
+    subgraph cluster_querybusiness{
+      label="ntf-oc\n(querybusiness)"
+      bgcolor = "mintcream"
+      41[shape=box,label="运营中心卡信息查询接口",fontname="Microsoft YaHei"]
+      42[shape=box,label="运营中心单卡开断网接口",fontname="Microsoft YaHei"]
+      43[shape=box,label="925卡开网",fontname="Microsoft YaHei"]
+      44[shape=box,label="925卡断网",fontname="Microsoft YaHei"]
+      45[shape=box,label="转售卡开网",fontname="Microsoft YaHei"]
+      46[shape=box,label="转售卡断网",fontname="Microsoft YaHei"]
+      42 -> 43
+      42 -> 44
+      42 -> 45
+      42 -> 46
+      46 -> 42[style = dotted]
+      45 -> 42[style = dotted]
+      44 -> 42[style = dotted]
+      43 -> 42[style = dotted]
+    }
+
+
+    subgraph cluster_operator{
+      label="ntf-operator\n(gateway)"
+      bgcolor = "mintcream"
+      51[shape=box,label="运营商引擎办理接口",fontname="Microsoft YaHei"]
+    }
+
+
+    subgraph cluster_flowfeectr{
+      label="ntf-oc\n(flowfeectr)"
+      bgcolor = "mintcream"
+      61[shape=box,label="flowfeectr办理接口",fontname="Microsoft YaHei"]
+    }
+
+    subgraph cluster_srm{
+      label="ntf-oc\n(srm)"
+      bgcolor = "mintcream"
+      71[shape=box,label="srm办理接口",fontname="Microsoft YaHei"]
+    }
+
+    subgraph cluster_srm{
+      label="ntf-oc\n(srm)"
+      bgcolor = "mintcream"
+      71[shape=box,label="srm办理接口",fontname="Microsoft YaHei"]
+    }
+    end [label="返回响应信息",fontname="Microsoft YaHei"]
+
+    
+    43 -> 61
+    44 -> 71
+    45 -> 51
+   
+    46 -> 51
+    51 -> 46[style = dotted]
+    51 -> 45[style = dotted]
+    71 -> 44[style = dotted]
+    61 -> 43[style = dotted]
+
+    1->21;
+    24 ->32;
+    32 -> 24[style = dotted]
+    32 -> 42
+    42 -> 32[style = dotted]
+    22 -> 31
+    31 -> 22[style = dotted]
+    31 -> 41
+    41 -> 31[style = dotted]
+    //51 -> 24[style = dotted]
+    24 -> end
+    error21->end
+    
+}
+"""
+
+
+#机卡关系配置接口
+t8="""
+digraph graphname{
+
+    1 [label="客户",fontname="Microsoft YaHei"]
+    subgraph cluster_open{
+      label="ntf-crm\n(open-api)"
+      bgcolor = "mintcream"
+      21 [shape=diamond, label="ICCID,MSISDN不都为空？", 
+              fontname="Microsoft YaHei"]
+      22 [shape=box,label="卡信息查询接口",fontname="Microsoft YaHei"]
+      error21 [shape=box, color="red",label="返回错误信息",fontname="Microsoft YaHei"]
+      23 [shape=diamond, label="卡信息是否存在？", 
+              fontname="Microsoft YaHei"]
+      231 [shape=diamond, label="电信转售卡？", fontname="Microsoft YaHei"]
+      233 [shape=box, label="请求apn接口", fontname="Microsoft YaHei"]
+      24 [shape=box,label="请求运营商引擎接口",fontname="Microsoft YaHei"]
+
+      21->22[label="true"];
+      22->23
+      23->231[label="true"];
+      231->24[label="true"];
+      231->233[label="false"];
+      21->error21[label="false"]
+      23->error21[label="false"]
+
+    }
+    subgraph cluster_api{
+      label="ntf-oc\n(api)"
+      bgcolor = "mintcream"
+      31[shape=box,label="api卡信息查询接口",fontname="Microsoft YaHei"]
+    }
+
+    subgraph cluster_querybusiness{
+      label="ntf-oc\n(querybusiness)"
+      bgcolor = "mintcream"
+      41[shape=box,label="运营中心卡信息查询接口",fontname="Microsoft YaHei"]
+    }
+
+
+    subgraph cluster_operator{
+      label="ntf-operator\n(gateway)"
+      bgcolor = "mintcream"
+      51[shape=box,label="运营商引擎办理接口",fontname="Microsoft YaHei"]
+    }
+
+
+    subgraph cluster_apn{
+      label="ntf-apn"
+      bgcolor = "mintcream"
+      61[shape=box,label="apn办理接口",fontname="Microsoft YaHei"]
+    }
+
+   
+    end [label="返回响应信息",fontname="Microsoft YaHei"]
+
+    233->61
+    61 -> 233[style = dotted]
+    1->21;
+    24 ->51
+    22 -> 31
+    31 -> 22[style = dotted]
+    31 -> 41
+    41 -> 31[style = dotted]
+    51 -> 24[style = dotted]
+    24 -> end
+    233 -> end
+    error21->end
+    
+}
+"""
+
+
+#机卡关系配置接口
+t9="""
+digraph graphname{
+
+    1 [label="客户",fontname="Microsoft YaHei"]
+    subgraph cluster_open{
+      label="ntf-crm\n(open-api)"
+      bgcolor = "mintcream"
+      21 [shape=diamond, label="ICCID,MSISDN不都为空？", 
+              fontname="Microsoft YaHei"]
+      22 [shape=box,label="卡信息查询接口",fontname="Microsoft YaHei"]
+      error21 [shape=box, color="red",label="返回错误信息",fontname="Microsoft YaHei"]
+      23 [shape=diamond, label="卡信息是否存在？", fontname="Microsoft YaHei"]
+      231 [shape=diamond, label="限速值在规定范围？", fontname="Microsoft YaHei"]
+      232 [shape=diamond, label="请求类型？", fontname="Microsoft YaHei"]
+
+      233 [shape=box, label="新增限速值", fontname="Microsoft YaHei"]
+      234 [shape=box, label="取消限速值", fontname="Microsoft YaHei"]
+      24 [shape=box,label="请求运营商引擎接口",fontname="Microsoft YaHei"]
+
+      21->22[label="true"];
+      22->23
+      //23->24[label="true"];
+      23->231[label="true"];
+      231->232[label="true"];
+      232->233[label="add"];
+      232->234[label="cancel"];
+      233->24
+      234->24
+      21->error21[label="false"]
+      23->error21[label="false"]
+      231->error21[label="false"]
+      //232->error21[label="false"]
+
+    }
+    subgraph cluster_api{
+      label="ntf-oc\n(api)"
+      bgcolor = "mintcream"
+      31[shape=box,label="api卡信息查询接口",fontname="Microsoft YaHei"]
+    }
+
+    subgraph cluster_querybusiness{
+      label="ntf-oc\n(querybusiness)"
+      bgcolor = "mintcream"
+      41[shape=box,label="运营中心卡信息查询接口",fontname="Microsoft YaHei"]
+    }
+
+
+    subgraph cluster_operator{
+      label="ntf-operator\n(gateway)"
+      bgcolor = "mintcream"
+      51[shape=box,label="运营商引擎办理接口",fontname="Microsoft YaHei"]
+    }
+
+   
+    end [label="返回响应信息",fontname="Microsoft YaHei"]
+    1->21;
+    24 ->51
+    22 -> 31
+    31 -> 22[style = dotted]
+    31 -> 41
+    41 -> 31[style = dotted]
+    51 -> 24[style = dotted]
+    24 -> end
+    error21->end
+    
+}
+"""
+
+
+#达量限速和达量告警
+t10 = """
+digraph graphname{
+	1 [label="客户",fontname="Microsoft YaHei"]
+	subgraph cluster_qianduan{
+		label="前端"
+        bgcolor = "mintcream"
+        fontname="Microsoft YaHei"
+        10[shape=box,label="风险防控页签",fontname="Microsoft YaHei"]
+        11[shape=box,label="监控告警",fontname="Microsoft YaHei"]
+        12[shape=box,label="达量限速",fontname="Microsoft YaHei"]
+        10 ->11
+        10 ->12
+	}
+
+	subgraph cluster_port{
+		label="iot\n(portal-srv)"
+        bgcolor = "mintcream"
+        20[shape=box,label="功能处理",fontname="Microsoft YaHei"]
+        21[shape=box,label="告警设置记录列表展示",fontname="Microsoft YaHei"]
+        22[shape=box,label="添加告警任务",fontname="Microsoft YaHei"]
+        221[shape=box,label="校验上传excel文件",fontname="Microsoft YaHei"]
+        222[shape=box,label="向orderform发起风控订单请求",fontname="Microsoft YaHei"]
+        223[shape=box,label="邮箱地址同步到CRM",fontname="Microsoft YaHei"]
+        23[shape=box,label="查询告警记录卡详情",fontname="Microsoft YaHei"]
+        //231[shape=box,label="总量查询",fontname="Microsoft YaHei"]
+        //232[shape=box,label="成功失败查询",fontname="Microsoft YaHei"]
+        24[shape=box,label="导出列表",fontname="Microsoft YaHei"]
+        //241[shape=box,label="导出数据量列表",fontname="Microsoft YaHei"]
+        //242[shape=box,label="导出成功失败列表",fontname="Microsoft YaHei"]
+        20 -> 21
+        20 -> 22
+        20 -> 23
+        20 -> 24
+        22 -> 221
+        221 -> 222
+        222 -> 223
+        //23 -> 231
+        //23 -> 232
+        //24 -> 241
+        //24 -> 242
+	}
+
+
+	subgraph cluster_card{
+		label="iot\n(card-srv)"
+        bgcolor = "mintcream"
+        30[shape=box,label="告警设置记录分页列表查询接口",fontname="Microsoft YaHei"]
+        31[shape=box,label="卡设置详情查询接口",fontname="Microsoft YaHei"]
+        311[shape=box,label="卡总量设置详情",fontname="Microsoft YaHei"]
+        312[shape=box,label="卡成功失败设置详情",fontname="Microsoft YaHei"]
+
+        33 [shape=diamond, label="设置任务完成？", fontname="Microsoft YaHei"]
+        34 [shape=box, label="请求rest接口(api/order/cmp/queryOrderCard)", fontname="Microsoft YaHei"]
+
+        35[shape=box, label="导出卡列表接口", fontname="Microsoft YaHei"]
+        351[shape=box, label="订单未完成（只导总量，返回本地文件地址）", fontname="Microsoft YaHei"]
+        352[shape=box, label="订单完成（可导成功失败卡详情，成功失败走任务中心）", fontname="Microsoft YaHei"]
+        353[shape=box, label="任务中心执行者(api/taskstart/autoCmpOrderCard，异步执行)", fontname="Microsoft YaHei"]
+        39[shape=box,label="数据库",fontname="Microsoft YaHei"]
+        35-> 351
+        351 -> 35[style = dotted]
+        35 -> 352
+        352 -> 35[style = dotted]
+        352 -> 353
+        353 -> 352[style = dotted]
+
+        
+        
+        31 -> 311
+        
+
+        312 -> 33
+        33 -> 34[label="true"];
+        39 ->312[style = dotted]
+        31 -> 312
+        30 -> 39
+        39 -> 30[style = dotted]
+        311 -> 39
+        39 -> 311[style = dotted]
+        34 -> 312[style = dotted]
+        33 -> 39[label="false"];
+	}
+
+
+	subgraph cluster_orderform{
+		label="iot\n(orderform-srv)"
+        bgcolor = "mintcream"
+        40[shape=box,label="风控订单处理接口",fontname="Microsoft YaHei"]
+        401[shape=box,label="校验数据",fontname="Microsoft YaHei"]
+        402[shape=box,label="将卡信息生成filehub文件",fontname="Microsoft YaHei"]
+        403[shape=box,label="保存风控订单信息到数据库",fontname="Microsoft YaHei"]
+        404[shape=box,label="向任务中心添加任务",fontname="Microsoft YaHei"]
+        405[shape=box,label="任务中心处理者（api/taskstart/autoCreate925Order,异步执行）",fontname="Microsoft YaHei"]
+        40 -> 401
+        401 -> 402
+        402 -> 403
+        403 -> 404
+        404 -> 405
+
+	}
+
+  end [label="返回响应信息",fontname="Microsoft YaHei"]
+
+	1 -> 10
+	11 -> 20
+	12 -> 20
+	21 -> 30
+	24 -> 35
+	222 -> 40
+	405 -> 222[style = dotted] 
+	35 -> 24[style = dotted] 
+	30 -> 21[style = dotted] 
+	23 -> 31
+	31 -> 23[style = dotted]
+  223 -> end
+}
+
+"""
+
+t=Source(t10)
+t.view()
