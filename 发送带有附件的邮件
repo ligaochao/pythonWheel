@@ -21,7 +21,7 @@ def send_email(smtpHost, sendAddr, password, recipientAddrs, fileurl,subject='',
     part.add_header('Content-Disposition', 'attachment', filename="log.txt")
     msg.attach(part)
     smtp = smtplib.SMTP()
-    smtp.connect(smtpHost, '25')
+    smtp.connect(smtpHost, '587')
     smtp.login(sendAddr, password)
     smtp.sendmail(sendAddr, recipientAddrs, str(msg))
     print("发送成功！")
