@@ -1,0 +1,194 @@
+import xlrd
+import uuid
+import xlwt
+import pandas as pd
+
+
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        pass
+ 
+    try:
+        import unicodedata
+        unicodedata.numeric(s)
+        return True
+    except (TypeError, ValueError):
+        pass
+ 
+    return False
+
+class Student():
+    def __init__(self, id, **kw):
+        self.id = id
+        for k, v in kw.items():
+            setattr(self, k, v)
+
+    def __str__(self):
+        return '%s(id=%s,column1=%s,column2=%s,column3=%s,column4=%s)' \
+               % (
+                   self.__class__.__name__, self.id, self.column1, self.column2, self.column3,
+                   self.column4)
+
+
+
+def  getNumber(obj):
+    if obj != None:
+        obd = obj[::-1]
+        for index in range(0,len(obd)):
+            if is_number(obd[index]) == False:
+                return index-1
+        return 8
+    else:
+        return 0
+
+
+def xstr(s):
+    if s is None:
+        return ''
+    else:
+        return str(s)
+
+def  getDataChange(obj):
+    #网络类型
+    netType = obj.get("column3")
+    if netType !=None:
+        obj["column3"] = netType.replace("2G/3G/4G","4G").replace("4G","2G/3G/4G")
+    #卡类型和卡尺寸
+    cardType = obj.get("column5")
+    # cardSize = cardType
+    if cardType !=None:
+        obj["column5"] = cardType.strip()
+        obj["column5-1"] = cardType.replace("工业大卡","MP2").replace("工业贴片 5x6","MS1").replace("工业中卡","MP2").replace("普通插拔 大卡","MP1").replace("普通插拔 三切","MP1").replace("普通插拔 三切DCP","MP1").replace("普通插拔 双切","MP1").replace("普通插拔大卡","MP1").replace("普通插拔双切","MP1").replace("普通贴片 2*2","MS0").replace("普通贴片 2x2","MS0").replace("普通贴片 5x6","MS0")
+        obj["column5-2"] = cardType.replace("工业大卡","2FF").replace("工业贴片 5x6","5x6").replace("工业中卡","3FF").replace("普通插拔 大卡","2FF").replace("普通插拔 三切","2/3/4FF").replace("普通插拔 三切DCP","2/3/4FF").replace("普通插拔 双切","2/3FF").replace("普通插拔大卡","2FF").replace("普通插拔双切","2/3FF").replace("普通贴片 2*2","2x2").replace("普通贴片 2x2","2x2").replace("普通贴片 5x6","5x6")
+        
+    return obj
+
+def read_excel(i,workbook):
+    
+    # 获取所有sheet
+    # print('打印所有sheet:', workbook.sheet_names())
+    # i = 0
+    sheet2 = workbook.sheet_by_index(i)  # sheet索引从0开始
+    rows_num = sheet2.nrows
+    cols_num = sheet2.ncols
+    newAList = []
+    for r in range(rows_num):
+        # 一行数据的实体类
+        entity_dict = {}
+        for c in range(cols_num):
+            cell_value = sheet2.row_values(r)[c]
+            # print('第%d行第%d列的值：[%s]' % (r, c, sheet2.row_values(r)[c]))
+            if (cell_value is None or cell_value == ''):
+                cell_value = (get_merged_cells_value(sheet2, r, c))
+                # 构建Entity
+            the_key = 'column' + str(c + 1);
+            # 动态设置各属性值
+            entity_dict[the_key] = xstr(cell_value).replace(".0","")
+        entity_dict = getDataChange(entity_dict)
+        # entity_dict['id'] = getUUID()
+        # stu = Student(**entity_dict)
+        # print(entity_dict)
+
+        indeL = 0
+        #保留一下原始值
+        xd = entity_dict["column6"]
+        if entity_dict.get("column8") != "" and  entity_dict.get("column6") != "":
+            if is_number(entity_dict.get("column8")) and int(entity_dict.get("column8")) > 1:
+                for j in range(0,int(entity_dict.get("column8"))):
+                    # entity_dict_copy = {}
+                    positionIndex = getNumber(str(entity_dict.get("column6")))
+                    std1 = str(int("1"+entity_dict.get("column6")[-positionIndex:])+ j)
+                    std2 = std1[1:]
+                    entity_dict["column6"] =str(entity_dict.get("column6")[0:-positionIndex])+std2
+                    newAList.append(entity_dict.copy())
+                    entity_dict["column6"] = xd
+            else:
+                newAList.append(entity_dict)
+        else:
+            if  entity_dict.get("column6") != "":
+                newAList.append(entity_dict)
+
+
+    # print(newAList[0])
+    return  newAList
+
+
+
+
+    # newList = []
+
+
+def get_merged_cells(sheet):
+    """
+    获取所有的合并单元格，格式如下：
+    [(4, 5, 2, 4), (5, 6, 2, 4), (1, 4, 3, 4)]
+    (4, 5, 2, 4) 的含义为：行 从下标4开始，到下标5（不包含）  列 从下标2开始，到下标4（不包含），为合并单元格
+    :param sheet:
+    :return:
+    """
+    return sheet.merged_cells
+
+
+def get_merged_cells_value(sheet, row_index, col_index):
+    """
+    先判断给定的单元格，是否属于合并单元格；
+    如果是合并单元格，就返回合并单元格的内容
+    :return:
+    """
+    merged = get_merged_cells(sheet)
+    for (rlow, rhigh, clow, chigh) in merged:
+        if (row_index >= rlow and row_index < rhigh):
+            if (col_index >= clow and col_index < chigh):
+                cell_value = sheet.cell_value(rlow, clow)
+                # print('该单元格[%d,%d]属于合并单元格，值为[%s]' % (row_index, col_index, cell_value))
+                return cell_value
+                break
+    return None
+
+
+def export_excel(export,filePath):
+   #将字典列表转换为DataFrame
+   pf = pd.DataFrame(list(export))
+   #指定字段顺序
+   #order = ['column1','column2','column3','column4','column5','column6','column7','column8','column9','column10','column11','column12','column13']
+   order = ['column6','column1','column3','column5','column5-1','column5-2','column4','column2']
+   pf = pf[order]
+   #将列名替换为中文
+   columns_map = {'column1': '供应商', 'column2': '平台', 'column3': '网络类型', 'column4': '分类', 'column5': '卡尺寸（原纪录）', 'column5-1': '卡种类','column5-2': '卡尺寸', 'column6': 'ICCID', 'column7': 'ICCID止', 'column8': '数量', 'column9': '入库时间', 'column10': '货架', 'column11': 'None', 'column12': '备注', 'column13': ''}
+   #columns_map = {'column1': '供应商', 'column2': '平台', 'column3': '网络类型', 'column4': '分类', 'column5': '卡尺寸', 'column6': 'ICCID起', 'column7': 'ICCID止', 'column8': '数量', 'column9': '入库时间', 'column10': '货架', 'column11': 'None', 'column12': '备注', 'column13': ''}
+   pf.rename(columns = columns_map,inplace = True)
+   #指定生成的Excel表格名称
+   file_path = pd.ExcelWriter(filePath)
+   #替换空单元格
+   pf.fillna(' ',inplace = True)
+   #输出
+   pf.to_excel(file_path,encoding = 'utf-8',index = False)
+   #保存表格
+   file_path.save()
+
+
+def getUUID():
+    return uuid.uuid1().hex
+
+
+if __name__ == "__main__":
+    print("脚本开始")
+    # 打开文件
+    workbook = xlrd.open_workbook(r'库存卡统计表-20200114新版）.xlsx')
+    index  = 0
+    for obj in  workbook.sheet_names():
+        # listD = []
+        # if obj.find("扬州电信明细")>-1:
+        try:
+            resultList = read_excel(index,workbook)
+            # listD.append(resultList[0:3])
+            # print(resultList[0:3])
+            export_excel(resultList,obj+".xlsx")
+            # break
+        except Exception as e:
+            print(e)
+        index = index + 1
+        
