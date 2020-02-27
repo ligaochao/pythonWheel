@@ -1,0 +1,495 @@
+
+#注意要预先导入大部分的包，这样就可以减缓执行的时间
+
+#!/usr/bin/env python3
+
+import tkinter as tk
+from  tkinter  import ttk
+import os
+import queue 
+import configparser
+import pyperclip
+import pyautogui
+import sys
+import linecache
+from tkinter import *
+import os
+import tkinter.filedialog
+from os import path
+# import windnd
+import json
+import pyperclip
+import pyautogui
+from tkinter.filedialog import askdirectory
+# from PIL import ImageTk,Image
+import easygui as g
+import pymysql
+import configparser
+import linecache
+import difflib
+import sys
+import json
+import itertools
+import calendar;
+import time;
+import shutil
+import requests
+import execjs  # pip install PyExecJS  # 需要注意， 包的名称：PyExecJS
+root = tk.Tk()
+
+#固定功能列表
+fixed = ["重载","退出","方法加密","方法解密"]
+
+
+config=configparser.ConfigParser()
+config.read('D:\\jinjia\\functionCon.ini',encoding = "utf-8")
+# print(config)
+func_list =[]
+# names = []
+for obj in config.sections():
+	func_list.append(config[obj]["explain"]+"---"+obj)
+
+# func_list = ["","python","重要网址","java","sql","js","java知识点","html","css","取消","退出"]
+func_list = fixed + func_list
+
+
+#核心方法
+def exec_code(LOC,fun,obj): 
+	# print(strd)
+	strResult = ""
+	LOC = getDecompressionFunction(LOC)
+	exec(LOC)
+	strResult = eval(fun)(obj)
+	return strResult
+
+
+
+def go(*args):   #处理事件，*args表示可变参数
+    # global label,realS
+    result = str(comboxlist.get()).strip()
+    print(result)
+    if result == "方法解密":
+        sentence = pyperclip.paste()
+        sentence = sentence.replace("\r","\n").replace("\n\n","\n")
+        if sentence.find("func=")>-1:
+            sentence = sentence.replace("func=","")
+        lastR = getDecompressionFunction(sentence)
+        print(lastR)
+        pyperclip.copy(lastR)
+        choice = pyautogui.alert(text="执行完成",title='',button="OK") 
+        return;
+    if result != None:
+    	if result == "退出":
+    		sys.exit()
+    	if result == "方法加密":
+    		sentence = pyperclip.paste()
+    		sentence = sentence.replace("\r","\n").replace("\n\n","\n")
+    		lastR = getCompressFunction(sentence)
+    		print(lastR)
+    		pyperclip.copy(lastR)
+    		choice = pyautogui.alert(text="执行完成",title='',button="OK") 
+    		return ;
+
+    	if result == "重载":
+    	  python = sys.executable
+    	  os.execl(python, python, * sys.argv)
+    	choice = "直接运行"
+    	result = result.split("---")[1]
+    	# choice = pyautogui.alert(text=config[result]["explain"],title='',button=["cancel","ok"]) 
+    	if choice.find("cancel") > -1:
+    		modelFilter()
+    	if choice.find("直接运行")>-1:
+    		#获取粘贴板内容
+            try:
+                sentence = pyperclip.paste()
+                LOC = config[result]["func"]
+                print(LOC)
+                resultO = {}
+                lastR = exec_code(LOC,result,sentence)
+                #这里转义括号
+                print("1111111"+lastR)
+                lastR = lastR.replace("xxxNxxx","(")
+                lastR = lastR.replace("yyyNyyy",")")
+                print("22222"+lastR)
+                pyperclip.copy(lastR)
+                if len(lastR) > 50:
+                    lastR = lastR[0:48]
+                choice = pyautogui.alert(text="执行完成:\n"+lastR,title='',button="OK") 
+            except Exception as e:
+                choice = pyautogui.alert(text=str(e),title='',button="OK") 
+    			# raise e
+    	else:
+    		pyperclip.copy(result)
+
+
+def on_select(event):
+    comboxlist["values"] = func_list
+    #这里点击则展示全部的信息
+    clickFlag = False
+    content = ""
+    try:
+        content = str(event.widget.get(event.widget.curselection()))
+    except Exception as e:
+        print(e)
+    if content == "":
+        return False
+
+def on_keyrelease(event):
+
+    # get text from entry
+    value = event.widget.get()
+    value = value.strip().lower()
+    # for obj in 
+    print(value)
+    if value == '':
+        comboxlist["values"] = func_list 
+    else:
+        valueList = []
+        for obj in func_list:
+            if obj.find(value)>-1:
+                valueList.append(obj)
+        comboxlist["values"] = fixed + valueList
+
+def query(event):
+	value = event.widget.get()
+	value = value.strip().lower()
+	sentence = value
+	if str(sentence).find("http") >-1 and str(sentence).find(":") >-1 and str(sentence).find("/") >-1:
+		os.startfile(str(sentence).strip())
+	os.startfile("http://www.baidu.com/s?wd="+str(sentence)+"&amp;cl=3&amp;t=12&amp;fr=news")
+	#这里是查询数据库还是查询本地文件待定
+	# os.startfile("http://www.baidu.com/s?wd="+str(sentence)+"&amp;cl=3&amp;t=12&amp;fr=news")
+
+
+
+
+#这里把URL的解析放进去
+def GoogleTranslate(obj):
+  retrunResult = ""
+  ctx = execjs.compile(  # 下面是一段js代码，从网页中分析得到
+            """ function TL(a) { var k = ""; var b = 406644; var b1 = 3293161072; var jd = "."; var $b = "+-a^+6"; var Zb = "+-3^+b+-f"; for (var e = [], f = 0, g = 0; g < a.length; g++) { var m = a.charCodeAt(g); 128 > m ? e[f++] = m : (2048 > m ? e[f++] = m >> 6 | 192 : (55296 == (m & 64512) && g + 1 < a.length && 56320 == (a.charCodeAt(g + 1) & 64512) ? (m = 65536 + ((m & 1023) << 10) + (a.charCodeAt(++g) & 1023), e[f++] = m >> 18 | 240, e[f++] = m >> 12 & 63 | 128) : e[f++] = m >> 12 | 224, e[f++] = m >> 6 & 63 | 128), e[f++] = m & 63 | 128) } a = b; for (f = 0; f < e.length; f++) a += e[f], a = RL(a, $b); a = RL(a, Zb); a ^= b1 || 0; 0 > a && (a = (a & 2147483647) + 2147483648); a %= 1E6; return a.toString() + jd + (a ^ b) }; function RL(a, b) { var t = "a"; var Yb = "+"; for (var c = 0; c < b.length - 2; c += 3) { var d = b.charAt(c + 2), d = d >= t ? d.charCodeAt(0) - 87 : Number(d), d = b.charAt(c + 1) == Yb ? a >>> d: a << d; a = b.charAt(c) == Yb ? a + d & 4294967295 : a ^ d } return a } """)
+  content = str(obj).replace("\r","\n").strip()
+  en_to_zn = True
+  for ch in content:
+    if u'\u4e00' <= ch <= u'\u9fff':
+      en_to_zn = False
+  if len(content) > 4891:
+    retrunResult = "翻译的长度超过限制！！！"
+    return retrunResult
+  tk = ctx.call("TL", content)
+  param = {'tk': tk, 'q': content}
+  url_zh_to_en = 'https://translate.google.cn/translate_a/single?client=t&sl=zh-CN&tl=en&hl=zh-CN&dt=at&dt=bd&dt=ex&dt=ld&dt=md&dt=qca&dt=rw&dt=rm&dt=ss&dt=t&ie=UTF-8&oe=UTF-8&otf=1&ssel=6&tsel=3&kc=1'
+  url_en_to_zh = "https://translate.google.cn/translate_a/single?client=t&sl=en &tl=zh-CN&hl=zh-CN&dt=at&dt=bd&dt=ex&dt=ld&dt=md&dt=qca&dt=rw&dt=rm&dt=ss &dt=t&ie=UTF-8&oe=UTF-8&clearbtn=1&otf=1&pc=1&srcrom=0&ssel=0&tsel=0&kc=2"
+
+  # 返回的结果为Json，解析为一个嵌套列表
+  result = requests.get(url_en_to_zh if en_to_zn else url_zh_to_en, params=param)
+  results = result.json()[0]
+  data = []
+  for test in results:
+      if test[0]:
+          data.append(test[0])
+  retrunResult =  data
+  return retrunResult[0]
+
+
+def  getFileSpecifiedContent(listFile,keyWord,frontIndex,afterIndex):
+    front = queue.Queue() #前几行用队列保持，后面直接用字符串
+    frontStr = ""
+    afterList  = []
+    #前五行缓存
+    resultList = []
+    for fileUrl in listFile:
+        try:
+            flag = False
+            with open(fileUrl,"r+",encoding="utf-8") as f:
+                for obj in f:
+                    if flag == False:
+                        if front.qsize() >= frontIndex:
+                            front.get()
+                            front.put(obj)
+                        else:
+                            front.put(obj)
+                    if flag:
+                        if len(afterList) <= afterIndex:
+                            afterList.append(obj)
+                        else:
+                            while not front.empty():
+                                frontStr = frontStr + front.get() +  "\n"
+                            objFile = {}
+                            objFile["path"] = fileUrl
+                            objFile["content"] = frontStr + "\n".join(afterList)
+                            resultList.append(objFile)
+                            frontStr = ""
+                            afterList = []
+                            flag = False
+                    if None != obj and obj.find(keyWord)> -1:
+                        flag = True
+                    
+        except Exception as e:
+            print(e)
+        if flag:
+            objFile = {}
+            objFile["path"] = fileUrl
+            while not front.empty():
+                frontStr = frontStr + front.get() +  "\n"
+            objFile["content"] = frontStr + "\n".join(afterList)
+            resultList.append(objFile)
+            frontStr = ""
+            afterList = []
+    return resultList
+
+
+
+def getDiffDump(sourceFileUrl,compareFileUrl,sourceFileList,compareFileList,strResult,level):
+  sourceFilepath,sourceFullflname = os.path.split(sourceFileUrl)
+  level =  level + sourceFullflname.replace(".java","") +"."
+  compareFilepath,compareFullflname = os.path.split(compareFileUrl)
+  sourceList = []
+  compareList = []
+  # print(sourceFileUrl)
+  with open(sourceFileUrl,"r+",encoding="utf-8") as f:
+    for obj in f:
+      if obj.find(";") > -1 and obj.find("/") == -1 and obj.find("import ") == -1 and obj.find("package ") == -1 and obj.find("static ") == -1:
+        if obj.find("public") > -1 or obj.find("private") > -1:
+          sourceList.append(obj)
+  with open(compareFileUrl,"r+",encoding="utf-8") as f:
+    for obj in f:
+      if obj.find(";") > -1 and obj.find("/") == -1 and obj.find("import ") == -1 and obj.find("package ") == -1 and obj.find("static ") == -1:
+        if obj.find("public") > -1 or obj.find("private") > -1:
+          compareList.append(obj)
+  diffList = set(sourceList) - set(compareList)
+  for obj in diffList:
+    strResult = strResult + level + "---"+str(obj).replace("\r","").strip()+"\n"
+  heList = list(set(sourceList).intersection(set(compareList)))  #求交集
+  for obj in heList:
+    obj = obj.replace("\n","").strip()
+    # print(obj)
+    objList = obj.split(" ")
+    # print(len(objList))
+    if len(objList) == 3:
+      # print(22222)
+      sourceFileUrl = ""
+      compareFileUrl = ""
+      if objList[1]  not in  ["final","String","Date","Integer","Long","Boolean","long","Float","Double","int","BigDecimal"]:
+        for obj in sourceFileList:
+          objF = obj.find(objList[1]+".java")
+          listF = obj.find(objList[1].replace("[]","").replace("List<","").replace(">","").strip()+".java")
+          if objF > -1 or listF > -1:
+            sourceFileUrl = obj
+            break
+        for obj in compareFileList:
+          objF = obj.find(objList[1]+".java")
+          listF = obj.find(objList[1].replace("[]","").replace("List<","").replace(">","").strip()+".java")
+          if objF > -1 or listF > -1:
+            compareFileUrl = obj
+            break
+        if sourceFileUrl != "" and compareFileUrl != "":
+          strResult = getDiffDump(sourceFileUrl,compareFileUrl,sourceFileList,compareFileList,strResult,level)
+        elif sourceFileUrl != "" and compareFileUrl == "":
+          print("未找到的资源有"+str(sourceFileUrl))
+
+  return strResult
+
+def print_all_file_path(init_file_path):
+  alist = []
+  for root,dirs,files in os.walk(init_file_path):
+    for file in files:
+      fileUrl = os.path.join(root,file)
+      if fileUrl.find(".java")>-1:
+          alist.append(fileUrl)
+      # print(os.path.join(root,file))
+  return alist
+
+def listdir(path,list_name):  #传入存储的list
+    for file in os.listdir(path):
+        file_path = os.path.join(path, file)  
+        if os.path.isdir(file_path):  
+            listdir(file_path, list_name)  
+        else:
+            list_name.append(file_path.replace("\\","/"))
+ 
+
+#方法加密(方便配置)
+def getCompressFunction(strd):
+    return strd.replace("\n","@@@@")
+
+#方法解密
+def getDecompressionFunction(strd):
+    return strd.replace("@@@@","\n")
+
+
+# fileUrl = "E:\\java\\im\\resource-mgr\\target\\bwae\\srv-api\\META-INF\\js\\bwaerpc-i.js"
+# fileUrl1 = "C:\\Users\\MAIBENBEN\\Downloads\\data (13)"
+# keyWord = "RPCB03C284FAD79BFD2FAF37CAC171164AB"
+# listFile = []
+# listFile.append(fileUrl)
+# listFile.append(fileUrl1)
+# afterIndex = 3
+# frontIndex = 3
+# listdir("E:/java",listFile)
+# print(listFile)
+
+def getDiffFile(sourceFileUrl,sourceFileList,fileList,noFileList):
+  sourceFilepath,sourceFullflname = os.path.split(sourceFileUrl)
+  sourceList = []
+  with open(sourceFileUrl,"r+",encoding="utf-8") as f:
+    for obj in f:
+      if obj.find(";") > -1 and obj.find("/") == -1 and obj.find("import ") == -1 and obj.find("package ") == -1 and obj.find("static ") == -1:
+        if obj.find("public") > -1 or obj.find("private") > -1:
+          sourceList.append(obj)
+  for obj in sourceList:
+    obj = obj.replace("\n","").strip()
+    # print(obj)
+    objList = obj.split(" ")
+    # print(len(objList))
+    if len(objList) == 3:
+      # print(22222)
+      sourceFileUrl = ""
+      compareFileUrl = ""
+      if objList[1]  not in  ["final","boolean","String","Date","Integer","Long","Boolean","long","Float","Double","int","BigDecimal"]:
+        for obj in sourceFileList:
+          objF = obj.find(objList[1]+".java")
+          listF = obj.find(objList[1].replace("[]","").replace("List<","").replace(">","").strip()+".java")
+          if objF > -1 or listF > -1:
+            sourceFileUrl = obj
+            if sourceFileUrl not in fileList:
+              fileList.append(sourceFileUrl)
+              getDiffFile(sourceFileUrl,sourceFileList,fileList,noFileList)
+              break
+          else:
+            if objList[1] not in noFileList:
+              for index in sourceFileList:
+                noFileList.append(objList[1])
+
+
+
+
+
+def print_all_file_path(init_file_path):
+  alist = []
+  aurlList = []
+  for root,dirs,files in os.walk(init_file_path):
+    for file in files:
+      alist.append(file)
+      aurlList.append(os.path.join(root,file))
+      # print(os.path.join(root,file))
+  return alist,aurlList
+
+def getObjectJson1(fileUrl,strContent,allFilelist,flagObjOrList,allUrlList):
+  filepath,fullflname = os.path.split(fileUrl)
+  contentList = []
+  lastFlag = False #这个是完结标识
+  with open(fileUrl,"r+",encoding="utf-8") as f:
+    for obj in f:
+      if obj.find(";")>-1 and obj.find("static") == -1 and obj.find("//") == -1 :
+        if obj.find("private") > -1 or obj.find("protected")>-1:
+          contentList.append(obj)
+  index = 0
+  for obj in contentList:
+    if index == len(contentList)-1:
+      lastFlag = True
+    objList = obj.split(" ")
+    reaList = []
+    for obj1 in objList:
+      obj1 = obj1.replace("\t","").replace("\n","").replace(";","")
+      if obj1 != "":
+        reaList.append(obj1)
+    if len(reaList) == 3:
+      if reaList[1] in ["String","Date"]:
+        strContent = strContent + '"'+reaList[2]+'":"",\n'
+      elif reaList[1] in ["Integer","Long","Boolean"]:
+        strContent = strContent +'"'+reaList[2]+'":"",\n'
+      else:
+        if reaList[1]+".java" in allFilelist:
+          strContent = strContent +'"'+reaList[2]+'":{\n'
+          filepath = allUrlList[allFilelist.index(reaList[1]+".java")]
+          strContent = getObjectJson(filepath,strContent,allFilelist,flagObjOrList,allUrlList)
+          # strContent = strContent + flagObjOrList
+        arrAyName = reaList[1].replace("List<","").replace(">","")+".java"
+        if reaList[1].find("List<") > -1  and arrAyName in allFilelist:
+          filepath = allUrlList[allFilelist.index(arrAyName)]
+          strContent = strContent +'"'+reaList[2]+'":[{\n'
+          strContent = getObjectJson(filepath,strContent,allFilelist,"\n}],\n",allUrlList)
+          # strContent = strContent + flagObjOrList
+      if lastFlag:
+        strContent = strContent[0:len(strContent)-2] + flagObjOrList
+    index = index + 1
+  return strContent
+
+
+
+
+def getObjectJson(fileUrl,strContent,allFilelist,allUrlList,bascList):
+  contentList = []
+  # if fileUrl.find("PurchaseDetail")>-1:
+  #   print(fileUrl)
+  with open(fileUrl,"r+",encoding="utf-8") as f:
+    for obj in f:
+      obj = obj.strip()
+      if obj.find(";")>-1 and obj.find("static") == -1 and obj.find("//") == -1:
+        if obj.find("private") > -1 or obj.find("protected")>-1:
+          obj = obj.replace(";","")
+          objDc = []
+          objectD = {}
+          for obj1 in  obj.split(" "):
+            if obj1.replace(" ","") != "":
+              objDc.append(obj1)
+          if len(objDc)>=3:
+            objectD["type"] = objDc[1]
+            objectD["name"] = objDc[2]
+          contentList.append(objectD)
+  # if fileUrl.find("PurchaseDetail")>-1:
+  #   print(contentList)
+  index = 0
+  for obj in contentList:
+    index = index + 1
+    if obj.get("type") in bascList:
+      strContent[obj.get("name")] = obj.get("type")
+    else:
+      objName = str(obj.get("type"))+".java"
+      if objName in allFilelist:
+        filepath = allUrlList[allFilelist.index(objName)]
+        newStrDict = {}
+        strContent[obj.get("name")] = getObjectJson(filepath,newStrDict,allFilelist,allUrlList,bascList)
+      else:
+        arrAyName = str(obj.get("type")).replace("List<","").replace(">","").replace("[]","").strip()+".java"
+        if arrAyName in allFilelist:
+          filepath = allUrlList[allFilelist.index(arrAyName)]
+          newStrDict = {}
+          strContent[obj.get("name")] = []
+          strContent[obj.get("name")].append(getObjectJson(filepath,newStrDict,allFilelist,allUrlList,bascList))
+          # print(arrAyName,obj)
+    if strContent.get(obj.get("name")) == {}:
+      strContent[obj.get("name")] = ""
+
+  return strContent
+
+
+#获取某个java对象的json全json
+def  getJavaObj(obj):
+  fileUrl = obj.replace("\r","").replace("\n","").strip()
+  filepath,fullflname = os.path.split(fileUrl)
+  strContent = {}
+  allFilelist,allUrlList = print_all_file_path(filepath.split("src\\")[0])
+  bascList = ["Byte","Short","Integer","Long","Float","Double","Character","Boolean","Date","byte", "short", "int", "long", "float", "double", "char", "boolean"]
+  strd = getObjectJson(fileUrl,strContent,allFilelist,allUrlList,bascList)
+  return json.dumps(strd)
+
+
+comvalue=tk.StringVar()#窗体自带的文本，新建一个值
+comboxlist=ttk.Combobox(root,textvariable=comvalue) #初始化
+comboxlist["values"]=func_list
+comboxlist.current(0)  #选择第一个
+comboxlist.bind("<<ComboboxSelected>>",go)  #绑定事件,(下拉列表框被选中时，绑定go()函数)
+comboxlist.bind('<KeyRelease>', on_keyrelease)
+comboxlist.bind("<Return>", query)
+comboxlist.pack()
+
+
+root.geometry("+1200+1")
+root.overrideredirect(True)
+root.wm_attributes('-topmost',1)
+# root.state("zoomed")
+root.mainloop()
+
+#注意定位表没收到的问题
