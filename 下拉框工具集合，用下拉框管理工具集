@@ -35,6 +35,24 @@ import time;
 import shutil
 import requests
 import execjs  # pip install PyExecJS  # 需要注意， 包的名称：PyExecJS
+# -*- coding: utf-8 -*-ahello world
+import sys, os
+from pynput.keyboard import Controller, Key, Listener
+from pynput import keyboard
+import time
+import win32api
+# from tkinter import *
+import easygui as g
+import pyperclip
+import pyautogui
+import _thread
+
+firstKey = None
+secondKey = None
+keyLong = ""
+copyFlag = False
+anYanFirst = None
+anYanSecond = None
 root = tk.Tk()
 
 #固定功能列表
@@ -42,12 +60,23 @@ fixed = ["重载","退出","方法加密","方法解密"]
 
 
 config=configparser.ConfigParser()
-config.read('D:\\jinjia\\functionCon.ini',encoding = "utf-8")
+config.read('D:\\jinjia\\functionCon.ini')
 # print(config)
 func_list =[]
 # names = []
+objList = []
 for obj in config.sections():
-	func_list.append(config[obj]["explain"]+"---"+obj)
+  obDict = {}
+  obDict["count"] = int(config[obj]["count"])
+  obDict["value"] = config[obj]["explain"]+"---"+obj
+  objList.append(obDict)
+
+# objList.sort(cmp=None, key=lambda x:x.count, reverse=False)
+objList.sort(key=lambda k: (k.get('count', 0)),reverse=True)
+# print(objList)
+for obj in objList:
+  func_list.append(obj.get("value"))
+
 
 # func_list = ["","python","重要网址","java","sql","js","java知识点","html","css","取消","退出"]
 func_list = fixed + func_list
@@ -103,6 +132,7 @@ def go(*args):   #处理事件，*args表示可变参数
             try:
                 sentence = pyperclip.paste()
                 LOC = config[result]["func"]
+                getIniChange(result)
                 print(LOC)
                 resultO = {}
                 lastR = exec_code(LOC,result,sentence)
@@ -120,6 +150,77 @@ def go(*args):   #处理事件，*args表示可变参数
     			# raise e
     	else:
     		pyperclip.copy(result)
+    python = sys.executable
+    os.execl(python, python, * sys.argv)
+
+#这里用于修改功能使用频率
+def getIniChange(obj):
+  #获取频率
+  count = int(config[obj]["count"])+1
+  config.set(obj,'count',str(count))
+  with open('D:\\jinjia\\functionCon.ini','w') as f:
+     config.write(f)
+
+#用于弹出线程
+def go1(result):   #处理事件，*args表示可变参数
+    # global label,realS
+    # result = str(comboxlist.get()).strip()
+    # print(result)
+    if result == "方法解密":
+        sentence = pyperclip.paste()
+        sentence = sentence.replace("\r","\n").replace("\n\n","\n")
+        if sentence.find("func=")>-1:
+            sentence = sentence.replace("func=","")
+        lastR = getDecompressionFunction(sentence)
+        print(lastR)
+        pyperclip.copy(lastR)
+        choice = pyautogui.alert(text="执行完成",title='',button="OK") 
+        return;
+    if result != None:
+      if result == "退出":
+        sys.exit()
+      if result == "方法加密":
+        sentence = pyperclip.paste()
+        sentence = sentence.replace("\r","\n").replace("\n\n","\n")
+        lastR = getCompressFunction(sentence)
+        print(lastR)
+        pyperclip.copy(lastR)
+        choice = pyautogui.alert(text="执行完成",title='',button="OK") 
+        return ;
+
+      if result == "重载":
+        python = sys.executable
+        os.execl(python, python, * sys.argv)
+      choice = "直接运行"
+      result = result.split("---")[1]
+      # choice = pyautogui.alert(text=config[result]["explain"],title='',button=["cancel","ok"]) 
+      if choice.find("cancel") > -1:
+        modelFilter()
+      if choice.find("直接运行")>-1:
+        #获取粘贴板内容
+            try:
+                sentence = pyperclip.paste()
+                LOC = config[result]["func"]
+                getIniChange(result)
+                print(LOC)
+                resultO = {}
+                lastR = exec_code(LOC,result,sentence)
+                #这里转义括号
+                print("1111111"+lastR)
+                lastR = lastR.replace("xxxNxxx","(")
+                lastR = lastR.replace("yyyNyyy",")")
+                print("22222"+lastR)
+                pyperclip.copy(lastR)
+                if len(lastR) > 50:
+                    lastR = lastR[0:48]
+                choice = pyautogui.alert(text="执行完成:\n"+lastR,title='',button="OK") 
+            except Exception as e:
+                choice = pyautogui.alert(text=str(e),title='',button="OK") 
+          # raise e
+      else:
+        pyperclip.copy(result)
+    python = sys.executable
+    os.execl(python, python, * sys.argv)
 
 
 def on_select(event):
@@ -474,6 +575,48 @@ def  getJavaObj(obj):
   bascList = ["Byte","Short","Integer","Long","Float","Double","Character","Boolean","Date","byte", "short", "int", "long", "float", "double", "char", "boolean"]
   strd = getObjectJson(fileUrl,strContent,allFilelist,allUrlList,bascList)
   return json.dumps(strd)
+
+
+
+
+
+# 这里是用快捷键弹出功能菜单
+def on_press(key):
+    global anYanFirst,anYanSecond,copyFlag,func_list
+    keyValue = ""
+    try:
+        keyValue = key.char
+    except Exception as e:
+        keyValue = str(key)
+    if anYanFirst == None:
+        anYanFirst = keyValue
+    if anYanFirst != None and anYanSecond == None:
+        if keyValue != anYanFirst:
+            anYanSecond = keyValue
+    if anYanFirst== "Key.ctrl_l" and anYanSecond == "Key.space":
+        copyFlag = True
+        anYanFirst= None
+        anYanSecond = None
+        print("复制开始")
+    if anYanFirst != None and anYanSecond != None:
+        anYanFirst= None
+        anYanSecond = None
+    if copyFlag:
+        copyFlag = False
+        ret = g.choicebox(msg="功能选择",choices=func_list)
+        print(ret)
+        go1(ret)
+        
+
+
+# 开始监听
+def start_listen():
+    with Listener(on_press=on_press) as listener:
+        listener.join()
+
+
+
+_thread.start_new_thread(start_listen,())
 
 
 comvalue=tk.StringVar()#窗体自带的文本，新建一个值
