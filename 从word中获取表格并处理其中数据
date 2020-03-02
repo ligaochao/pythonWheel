@@ -1,0 +1,106 @@
+import docx
+from docx import Document #导入库
+
+
+
+
+#把word中的表格变成对象
+def  getJavaObject(path):
+    resultList = []
+    document = Document(path) #读入文件
+    tables = document.tables #获取文件中的表格集
+    index = 0
+    for index in range(0,len(tables)):
+        table = tables[index  ]#获取文件中的第一个表格
+        # print(len(table.rows))
+        objList = []
+        for i in range(1,len(table.rows)):#从表格第二行开始循环读取表格数据
+            objDict = {}
+            if table.cell(0,0).text == "参数名称":
+                index = index + 1
+                objDict["req"] = 1
+                objDict["name"] = table.cell(i,0).text
+                objDict["type"] = table.cell(i,2).text
+                objDict["note"] = "("+table.cell(i,1).text.replace("是","必填").replace("否","非必填")+")"+table.cell(i,3).text
+            if table.cell(0,0).text == "参数类型":
+                index = index + 1
+                objDict["req"] = 0
+                objDict["name"] = table.cell(i,1).text
+                objDict["type"] = table.cell(i,2).text
+                objDict["note"] = "("+table.cell(i,3).text+")"+table.cell(i,4).text
+            if objDict != {}:
+                objList.append(objDict)
+                # print(objDict)
+        if objList not in resultList and objList != [] :
+            resultList.append(objList)
+    return  resultList
+    # print(len(resultList))
+    # print(index)
+
+
+
+
+#把对象修改为model
+def  getObjectTomodel(resultList,strReqModel):
+    strUrl = "C:\\Users\\ligc\\Desktop\\物联网\\open-api开发\\生成的结果model\\【name】.java"
+    contentResult = ""
+    contentModel = """
+    /**
+     * 【note】
+     */
+    private 【type】 【name】;
+    """
+    obRed = strReqModel
+    for obj in resultList:
+        # print(obj)
+        # type1 = ""
+        type1  = ""
+        index1 = str(resultList.index(obj))
+        for obj1 in obj:
+            if obj1.get("req") == 1:#入参
+                type1 = "req"
+            if obj1.get("req") == 0:#入参
+                type1 = "resp"   
+            contentResult = contentResult + contentModel.replace("【note】",obj1.get("note")).replace("【name】",obj1.get("name")).replace("【type】",obj1.get("type"))
+            contentResult = contentResult + "\n"
+        strReqModel = strReqModel.replace("【content】",contentResult)
+        strReqModel = strReqModel.replace("【index】",index1)
+        strReqModel = strReqModel.replace("【type】",type1)
+        print(strReqModel)
+        with open(strUrl.replace("【name】","Model"+index1+type1),"w",encoding="utf-8") as f:
+            f.write(strReqModel)
+        strReqModel = obRed
+        contentResult = ""
+        # break
+        
+    # with open() as f:
+
+    # print(strReqModel)
+
+
+
+
+path = "C:\\Users\\ligc\\Desktop\\物联网\\open-api开发\\新open-api接口规范文档V1.4.docx" #文件路径
+strReqModel = """package com.bw.ae.ntf_oc.openapimodel.model.【type】;
+
+import java.io.Serializable;
+import lombok.Data;
+
+/**
+ * 
+ * @author ligc
+ *
+ */
+
+
+@Data
+public class Model【index】【type】 implements Serializable{
+    
+    【content】
+    
+}
+"""
+
+getObjectTomodel(getJavaObject(path),strReqModel)
+
+
